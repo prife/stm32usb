@@ -3,6 +3,7 @@
 #include <stm32f10x.h>
 #include <usb_conf.h>
 #include "usb.h"
+#include <string.h>
 
 #define USB_DISCONNECT                      GPIOF
 #define USB_DISCONNECT_PIN                  GPIO_Pin_11
@@ -166,6 +167,18 @@ void get_endpoint_buf(int ep_nr, struct ep_buf *ep)
     }
     //dumphex((u32*)PMA_ADDR, 256);
 }
+
+void get_ep_buf(int ep_nr, struct ep_buf *ep, int len)
+{
+    int i;
+    u32 * ptr = (u32*)(((u16)*EPREG_RXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
+
+    for (i=0; i<len; i+=2)
+    {
+        *(rt_uint16_t *)(&ep->buffer[i]) = (*ptr++) & 0xFFFF;
+    }
+}
+
 
 void send_endpoint(int ep_nr, struct ep_buf *ep)
 {
@@ -465,15 +478,12 @@ int handle_packet_setup(struct ep_buf *ep)
 
 int handle_packet_out(struct ep_buf *ep)
 {
-    dumphex(ep->buffer, ep->len);
     //TODO
-
     return 0;
 }
 
 int handle_packet_in(struct ep_buf *ep)
 {
-    dumphex(ep->buffer, ep->len);
     //TODO
 
     return 0;
@@ -489,43 +499,43 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
     {
         _ClearISTR(ISTR_RESET); //do not go into CLR
         usb_endpoint_config();
-        TRACE(TAG "USB 复位中断 reset\n");
+        TRACE("\n####### USB 复位中断 reset ######\n");
     }
 
     if (istr & USB_CNTR_MASK & ISTR_ERR)
     {
         _ClearISTR(ISTR_ERR);
-        TRACE(TAG "USB 总线错误中断 ERR\n");
+        TRACE("####### USB 总线错误中断 ERR ######\n");
     }
 
     if (istr & USB_CNTR_MASK & ISTR_WKUP)
     {
         _ClearISTR(ISTR_WKUP);
-        TRACE(TAG "USB 唤醒中断WKUP\n");
+        TRACE("####### USB 唤醒中断WKUP #######\n");
     }
 
     if (istr & USB_CNTR_MASK & ISTR_SUSP)
     {
         _ClearISTR(ISTR_SUSP);
-        TRACE(TAG "USB 挂起中断SUSP\n");
+        TRACE(" ####### USB 挂起中断SUSP #######\n");
     }
 
     if (istr & USB_CNTR_MASK & ISTR_SOF)
     {
         _ClearISTR(ISTR_SOF);
-        TRACE(TAG "USB 帧起始中断 SOF\n");
+        TRACE("####### USB 帧起始中断 SOF #######\n");
     }
 
     if (istr & USB_CNTR_MASK & ISTR_ESOF)
     {
         _ClearISTR(ISTR_ESOF);
-        TRACE(TAG "USB 帧起始中断ESOF\n");
+        TRACE("####### USB 帧起始中断ESOF #######\n");
     }
 
     if (istr & USB_CNTR_MASK & ISTR_DOVR)
     {
         _ClearISTR(ISTR_DOVR);
-        TRACE(TAG "USB DMA溢出中断 DOver\n");
+        TRACE("####### USB DMA溢出中断 DOver #######\n");
     }
 
     if (istr & ISTR_CTR)
@@ -551,6 +561,13 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
                 TRACE("[%4d] USB端点<%d> SETUP packet, len:<%d>\n", __LINE__, ep_id, ep.len);
                 if (ep_id == 0)
                 {
+                    if (ep.len == 0)
+                    {
+                        rt_memset(ep.buffer, 0, sizeof(ep.buffer));
+                        TRACE("[%4d] dump 8 bytes:\n", __LINE__);
+                        get_ep_buf(0, &ep, 8);
+                        dumphex(ep.buffer, 8);
+                    }
                     handle_packet_setup(&ep);
                 }
                 else
@@ -562,7 +579,18 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
             { //OUT
                 TRACE("[%4d] USB端点<%d> out packet, len:<%d>\n", __LINE__, ep_id, ep.len);
                 dumphex(ep.buffer, ep.len);
-                handle_packet_out(&ep);
+                if (ep.len == 0)
+                {
+                    TRACE("[%4d] dump 8 bytes:\n", __LINE__);
+                    get_ep_buf(0, &ep, 8);
+                    dumphex(ep.buffer, 8);
+                    //ep_send(ep_id, RT_NULL, 0);
+                }
+                else
+                {
+                    TRACE("[%4d] how to handle this?!\n");
+                    handle_packet_out(&ep);
+                }
             }
         }
         else //IN
