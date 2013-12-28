@@ -24,11 +24,11 @@ const u8 Joystick_DeviceDescriptor[] = {
 	0x03,
 	0x00,                       /*bcdDevice rel. 2.00*/ //FIXME<-------------------¼ÓÃÜ¹·°æ±¾ºÅ
 	0x02,
-	0,                          /*Index of string descriptor describing
+	1,                          /*Index of string descriptor describing
                                               manufacturer */
-	0,                          /*Index of string descriptor describing
+	2,                          /*Index of string descriptor describing
                                              product*/
-	0,                          /*Index of string descriptor describing the
+	3,                          /*Index of string descriptor describing the
                                              device serial number */
 	0x01                        /*bNumConfigurations*/
 }; /* Joystick_DeviceDescriptor */
@@ -113,3 +113,46 @@ const struct descriptor DeviceDesc =
 { Joystick_DeviceDescriptor, sizeof(Joystick_DeviceDescriptor), };
 const struct descriptor ConfigDesc =
 { Joystick_ConfigDescriptor, sizeof(Joystick_ConfigDescriptor), };
+
+const u8 Joystick_StringLangID[4] = {
+	04,/* Size of Language ID */
+	USB_STRING_DESCRIPTOR_TYPE,
+	0x09,//0x0409 Aemriacan Engligsh
+	0x04
+};
+
+const u8 Joystick_StringVendor[] = {
+	0,//Joystick_StringVendorSize, /* Size of Vendor string */
+	USB_STRING_DESCRIPTOR_TYPE,  /* bDescriptorType*/
+	/* Manufacturer: "STMicroelectronics" */
+	'U', 0, 'S', 0, 'B', 0, 'k', 0, 'e', 0, 'y', 0
+};	//14 bytes
+
+const u8 Joystick_StringProduct[] = {
+	0,//Joystick_StringProductSize,          /* bLength */
+	USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
+	'U', 0, 'S', 0, 'B', 0, 'k', 0, 'e', 0, 'y', 0
+};
+const u8 Joystick_StringSerial[] = {
+	0,//Joystick_StringSerialSize,           /* bLength */
+	USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
+	'J', 0, 'o', 0, 'y', 0, ' ', 0, ' ', 0, ' ', 0, '1', 0, '.', 0,
+	'0', 0, '0', 0, '0', 0, '0', 0
+};
+
+//u8 str_desc_buffer[256];
+const struct descriptor StringDescTable[] =
+{
+    {Joystick_StringLangID, sizeof(Joystick_StringLangID), },
+    {Joystick_StringProduct, sizeof(Joystick_StringProduct), },
+    {Joystick_StringVendor, sizeof(Joystick_StringVendor), },
+    {Joystick_StringSerial, sizeof(Joystick_StringSerial), },
+};
+
+const unsigned char * str_desc_name_table[]=
+{
+    "Language",
+    "Product",
+    "Vendor",
+    "Serial",
+};

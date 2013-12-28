@@ -362,7 +362,21 @@ int handle_packet_setup(struct ep_buf *ep)
                     ep_send(0, ConfigDesc.desc, ConfigDesc.len);
                     break;
                 case DESC_STRING:
-                    TRACE("string_desc\n");
+                    TRACE("string_desc:%d-->",(wValue & 0xFF));
+                    if ((wValue & 0xFF) < 4)
+                    {
+                        static u8 str_buf[256];
+                        static const struct descriptor * p;
+                        TRACE("%s\n", str_desc_name_table[wValue & 0xFF]);
+                        p = &StringDescTable[(wValue & 0xFF)];
+                        memcpy(str_buf, p->desc, p->len);
+                        str_buf[0] = p->len;
+                        ep_send(0, str_buf, p->len);
+                    }
+                    else
+                    {
+                        TRACE("-->bad argument!\n");
+                    }
                     break;
                 case DESC_INTERFACE:
                     TRACE("interface_desc\n");

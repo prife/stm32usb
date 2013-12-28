@@ -22,5 +22,6 @@ struct descriptor
 
 extern const struct descriptor DeviceDesc;
 extern const struct descriptor ConfigDesc;
-
+extern const struct descriptor StringDescTable[];
+extern const unsigned char * str_desc_name_table[];
 #endif
