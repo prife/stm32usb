@@ -20,6 +20,16 @@ struct descriptor
 #define USB_DESC_HID_SIZE          9
 #define USB_DESC_ENDPOINT_SIZE     7
 
+typedef enum _HID_REQUESTS {
+    GET_REPORT = 1,
+    GET_IDLE,
+    GET_PROTOCOL,
+
+    SET_REPORT = 9,
+    SET_IDLE,      //0x0A
+    SET_PROTOCOL   //0x0B
+} HID_REQUESTS;
+
 extern const struct descriptor DeviceDesc;
 extern const struct descriptor ConfigDesc;
 extern const struct descriptor StringDescTable[];

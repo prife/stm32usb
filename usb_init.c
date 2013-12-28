@@ -430,7 +430,31 @@ int handle_packet_setup(struct ep_buf *ep)
             }
             break;
         case REQUEST_TYPE_CLASS:
-            TRACE("USB input Class qeuset\n");
+            TRACE("USB input Class qeuset:");
+            switch(bRequest)
+            {
+            case GET_REPORT:
+                TRACE("GET_REPORT\n");
+                break;
+            case GET_IDLE:
+                TRACE("GET_IDLE\n");
+                break;
+            case GET_PROTOCOL:
+                TRACE("GET_PROTOCOL\n");
+                break;
+            case SET_REPORT:
+                TRACE("SET_REPORT\n");
+                break;
+            case SET_IDLE:
+                TRACE("SET_IDLE\n");
+                break;
+            case SET_PROTOCOL:
+                TRACE("SET_PROTOCOL\n");
+                break;
+            default:
+                TRACE("bad request!\n");
+                break;
+            }
             break;
         case REQUEST_TYPE_VENDOR:
             TRACE("USB input Vendor qeuset\n");
@@ -496,7 +520,32 @@ int handle_packet_setup(struct ep_buf *ep)
             }
             break;
         case REQUEST_TYPE_CLASS:
-            TRACE("USB output Class qeuset\n");
+            TRACE("USB output Class qeuset:");
+            switch(bRequest)
+            {
+            case GET_REPORT:
+                TRACE("GET_REPORT\n");
+                break;
+            case GET_IDLE:
+                TRACE("GET_IDLE\n");
+                break;
+            case GET_PROTOCOL:
+                TRACE("GET_PROTOCOL\n");
+                break;
+            case SET_REPORT:
+                TRACE("SET_REPORT\n");
+                break;
+            case SET_IDLE:
+                TRACE("SET_IDLE\n");
+                ep_send(0, NULL, 0);
+                break;
+            case SET_PROTOCOL:
+                TRACE("SET_PROTOCOL\n");
+                break;
+            default:
+                TRACE("bad request!\n");
+                break;
+            }
             break;
         case REQUEST_TYPE_VENDOR:
             TRACE("USB output Vendor qeuset\n");
