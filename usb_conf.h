@@ -15,5 +15,6 @@ enum usb_cable_type
     USB_CABLE_DISCONNECT = !USB_CABLE_CONNECT,
 };
 
-#include <usb_regs.h>
+#define CONFIG_EP_NUM   1
+#define EP0_PACKET_SIZE 64
 #endif

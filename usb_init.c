@@ -1,8 +1,9 @@
 #define USE_STDPERIPH_DRIVER
 #include <rtthread.h>
 #include <stm32f10x.h>
-#include <usb_conf.h>
+#include "usb_conf.h"
 #include "usb.h"
+#include <usb_regs.h>
 #include <string.h>
 
 #define USB_DISCONNECT                      GPIOF
@@ -103,7 +104,6 @@ void usb_init()
  * nr: endpoint id
  * flag: Enable/Disable
  */
-#define EP0_PACKET_SIZE 64
 void usb_endpoint_config()
 {
     /* enable some interrupts */
@@ -206,7 +206,7 @@ void send_endpoint(int ep_nr, struct ep_buf *ep)
 #endif
 }
 
-void ep_send(int ep_nr, u8 * buf, int len)
+void ep_send(int ep_nr, const u8 * buf, int len)
 {
     int i;
     u32 * ptr = (u32*)(((u16)*EPREG_TXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
@@ -306,7 +306,6 @@ int handle_packet_setup(struct ep_buf *ep)
 #define REQUEST_TYPE_CLASS    ((0<<6)|(1<<5))
 #define REQUEST_TYPE_VENDOR   ((1<<6)|(0<<5))
 #define REQUEST_TYPE_RESERVED ((1<<6)|(1<<5))
-
     rt_uint8_t bmRequestType;
     rt_uint8_t bRequest;
     rt_uint16_t wValue;
@@ -348,15 +347,19 @@ int handle_packet_setup(struct ep_buf *ep)
                 {
                 case DESC_DEVICE:
                 {
-                    static struct ep_buf ep;
                     TRACE("device_desc\n");
-                    ep.len = DeviceDesc.len;
-                    ep.send_buffer = DeviceDesc.desc;
-                    send_endpoint(0, &ep);
+                    //ep.len = DeviceDesc.len;
+                    //ep.send_buffer = DeviceDesc.desc;
+                    //send_endpoint(0, &ep);
+                    ep_send(0, DeviceDesc.desc, DeviceDesc.len);
                     break;
                 }
                 case DESC_CONFIGURATION:
                     TRACE("config_desc\n");
+                    //ep.len = ConfigDesc.len;
+                    //ep.send_buffer = ConfigDesc.desc;
+                    //send_endpoint(0, &ep);
+                    ep_send(0, ConfigDesc.desc, ConfigDesc.len);
                     break;
                 case DESC_STRING:
                     TRACE("string_desc\n");
@@ -622,7 +625,6 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
         enable_endpoint_rx(ep_id, EP0_PACKET_SIZE);
     }
 
-__out:
     return ;
 }
 
