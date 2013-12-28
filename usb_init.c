@@ -6,6 +6,13 @@
 #include <usb_regs.h>
 #include <string.h>
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define USB_DISCONNECT                      GPIOF
 #define USB_DISCONNECT_PIN                  GPIO_Pin_11
 #define RCC_APB2Periph_GPIO_DISCONNECT      RCC_APB2Periph_GPIOF
@@ -306,6 +313,8 @@ int handle_packet_setup(struct ep_buf *ep)
 #define REQUEST_TYPE_CLASS    ((0<<6)|(1<<5))
 #define REQUEST_TYPE_VENDOR   ((1<<6)|(0<<5))
 #define REQUEST_TYPE_RESERVED ((1<<6)|(1<<5))
+    int send_len;
+    //<----------------------
     rt_uint8_t bmRequestType;
     rt_uint8_t bRequest;
     rt_uint16_t wValue;
@@ -359,7 +368,8 @@ int handle_packet_setup(struct ep_buf *ep)
                     //ep.len = ConfigDesc.len;
                     //ep.send_buffer = ConfigDesc.desc;
                     //send_endpoint(0, &ep);
-                    ep_send(0, ConfigDesc.desc, ConfigDesc.len);
+                    send_len = MIN(wLength, ConfigDesc.len);
+                    ep_send(0, ConfigDesc.desc, send_len);
                     break;
                 case DESC_STRING:
                     TRACE("string_desc:%d-->",(wValue & 0xFF));
