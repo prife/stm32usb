@@ -56,10 +56,10 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	0x00,
 	0x01,         /*bNumInterfaces: 1 interface*/
 	0x01,         /*bConfigurationValue: Configuration value*/
-	0x01,         /*iConfiguration: Index of string descriptor describing
+	0x00,         /*iConfiguration: Index of string descriptor describing
                                  the configuration*///<------------??
 	0x80,         /*bmAttributes: self powered */
-	0x19,         /*MaxPower 100 mA: this current is used for detecting Vbus*/
+	0x32,         /*MaxPower 100 mA: this current is used for detecting Vbus*/
 
 	/************** Descriptor of Joystick Mouse interface ****************/
 	/* 09 */

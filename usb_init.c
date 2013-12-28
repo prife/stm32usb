@@ -220,12 +220,12 @@ void ep_send(int ep_nr, const u8 * buf, int len)
 
     TRACE("send ep: ptr %p, len %d\n", ptr, len);
     dumphex((u8*)buf, len);
-    if (len & 0x1)
-        len ++;
     for (i=0; i<len; i+=2)
     {
         (*ptr++) = ((rt_uint16_t)buf[i+1] << 8) | buf[i];
     }
+    if (len & 0x1)
+        (*ptr++) = buf[i];
 
     _SetEPTxCount(ep_nr, len);
 	_SetEPTxStatus(ep_nr, EP_TX_VALID);
