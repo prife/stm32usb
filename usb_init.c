@@ -306,6 +306,12 @@ void set_address(int address)
     _SetDADDR((address & 0x7F) | DADDR_EF);
 }
 
+void set_configration()
+{
+    //just response an 0-Byte DATA packet
+    ep_send(0, NULL, 0);
+}
+
 int handle_packet_setup(struct ep_buf *ep)
 {
 #define REQUEST_TYPE          ((1<<6)|(1<<5))
@@ -473,6 +479,7 @@ int handle_packet_setup(struct ep_buf *ep)
                 break;
             case SET_CONFIGURATION :
                 TRACE("set_configration\n");
+                set_configration();
                 break;
             case GET_INTERFACE :
                 TRACE("get_interface\n");
