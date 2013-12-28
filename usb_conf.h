@@ -4,8 +4,8 @@
 #define TRACE  rt_kprintf
 
 #define USB_CNTR_MASK  \
-    (CNTR_CTRM  | CNTR_WKUPM | \
-     CNTR_ERRM  | CNTR_RESETM)
+    (CNTR_CTRM  | CNTR_WKUPM \
+     | CNTR_ERRM  | CNTR_RESETM)
 
 #define _ClearISTR(bit) _SetISTR((uint16_t)(~(bit)))
 

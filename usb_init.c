@@ -2,6 +2,7 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 #include <usb_conf.h>
+#include "usb.h"
 
 #define USB_DISCONNECT                      GPIOF
 #define USB_DISCONNECT_PIN                  GPIO_Pin_11
@@ -101,15 +102,18 @@ void usb_init()
  * nr: endpoint id
  * flag: Enable/Disable
  */
-int usb_endpoint_config()
+#define EP0_PACKET_SIZE 64
+void usb_endpoint_config()
 {
-#if 0
+    /* enable some interrupts */
+    _SetCNTR(USB_CNTR_MASK);
+#if 1
     _SetEPType(ENDP0, EP_CONTROL);
     _SetEPTxStatus(ENDP0, EP_TX_STALL);
     _SetEPRxAddr(ENDP0, ENDP0_RXADDR);
     _SetEPTxAddr(ENDP0, ENDP0_TXADDR);
     _ClearEP_KIND(ENDP0);
-    _SetEPRxCount(ENDP0, 64);
+    _SetEPRxCount(ENDP0, EP0_PACKET_SIZE );
     _SetEPRxStatus(ENDP0, EP_RX_VALID);
 
     _SetEPAddress(0, 0);
@@ -126,7 +130,8 @@ int usb_endpoint_config()
 
 struct ep_buf
 {
-    char buffer[1024];
+    u8 buffer[1024];
+    const u8 * send_buffer;
     u32 len;
 };
 
@@ -160,6 +165,56 @@ void get_endpoint_buf(int ep_nr, struct ep_buf *ep)
         *(rt_uint16_t *)(&ep->buffer[i]) = (*ptr++) & 0xFFFF;
     }
     //dumphex((u32*)PMA_ADDR, 256);
+}
+
+void send_endpoint(int ep_nr, struct ep_buf *ep)
+{
+    int i;
+    //u32 * ptr = (u32*)(((u16)*EPREG_TXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
+    u32 * ptr = (u32*)(((u16)*EPREG_TXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
+    RT_ASSERT(!((u32)(ep->send_buffer) & 0x1));
+    //RT_ASSERT(0);
+
+    TRACE("send ep: ptr %p, len %d\n", ptr, ep->len);
+    dumphex((u8*)ep->send_buffer, ep->len);
+    //set USB_COUNTn_TX the Length to send when got IN packet
+    if (ep->len & 0x1)
+        ep->len ++;
+    for (i=0; i<ep->len; i+=2)
+    {
+        (*ptr++) = *(rt_uint16_t *)(&ep->send_buffer[i]);//FIXME
+    }
+
+#if 0
+    (u16)(*EPREG_TXBUF_SIZE(ep_nr)) & 0x3FF = ep->len;
+#else
+    _SetEPTxCount(ep_nr, ep->len);
+	_SetEPTxStatus(ep_nr, EP_TX_VALID);
+#endif
+}
+
+void ep_send(int ep_nr, u8 * buf, int len)
+{
+    int i;
+    u32 * ptr = (u32*)(((u16)*EPREG_TXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
+
+    TRACE("send ep: ptr %p, len %d\n", ptr, len);
+    dumphex((u8*)buf, len);
+    if (len & 0x1)
+        len ++;
+    for (i=0; i<len; i+=2)
+    {
+        (*ptr++) = ((rt_uint16_t)buf[i+1] << 8) | buf[i];
+    }
+
+    _SetEPTxCount(ep_nr, len);
+	_SetEPTxStatus(ep_nr, EP_TX_VALID);
+}
+//enable ep N valid
+void enable_endpoint_rx(int ep_nr, int count)
+{
+    _SetEPRxCount(ep_nr, count);
+	_SetEPRxStatus(ep_nr, EP_RX_VALID);
 }
 
 struct std_device_reqeust
@@ -199,17 +254,36 @@ enum std_device_reqeust_type
     SYNCH_FRAME = 12,
 };
 
-short net2host_16bit(char * buffer)
+enum descriptor_type
+{
+    DESC_DEVICE = 1,
+    DESC_CONFIGURATION = 2,
+    DESC_STRING = 3,
+    DESC_INTERFACE = 4,
+    DESC_ENDPOINT = 5,
+};
+
+short net2host_16bit(u8 * buffer)
 {
     return ((((short)buffer[1]) << 8) | buffer[0]);
 }
 
-int net2host_32bit(char * buffer)
+int net2host_32bit(u8 * buffer)
 {
     return ((((int)buffer[3]) << 24) |
             (((int)buffer[2]) << 16) |
             (((int)buffer[1]) << 8)  |
             (((int)buffer[0])));
+}
+
+static int set_address_flag;
+static int gAddress;
+void set_address(int address)
+{
+    //USB_DAADR
+    _SetEPAddress(0, 0);
+    _SetEPAddress(1, 1);
+    _SetDADDR((address & 0x7F) | DADDR_EF);
 }
 
 int handle_packet_setup(struct ep_buf *ep)
@@ -235,7 +309,7 @@ int handle_packet_setup(struct ep_buf *ep)
     dumphex(ep->buffer, ep->len);
     if (bmRequestType & 0x80)
     {
-        //OUT
+        //IN
         switch (bmRequestType & REQUEST_TYPE)
         {
         case REQUEST_TYPE_STDARD:
@@ -255,8 +329,37 @@ int handle_packet_setup(struct ep_buf *ep)
                 TRACE("set_address\n");
                 break;
             case GET_DESCRIPTOR :
-                TRACE("get_descriptor\n");
+            {
+                TRACE("get_descriptor: ");
+                switch (wValue >> 8) // descriptor type;
+                {
+                case DESC_DEVICE:
+                {
+                    static struct ep_buf ep;
+                    TRACE("device_desc\n");
+                    ep.len = DeviceDesc.len;
+                    ep.send_buffer = DeviceDesc.desc;
+                    send_endpoint(0, &ep);
+                    break;
+                }
+                case DESC_CONFIGURATION:
+                    TRACE("config_desc\n");
+                    break;
+                case DESC_STRING:
+                    TRACE("string_desc\n");
+                    break;
+                case DESC_INTERFACE:
+                    TRACE("interface_desc\n");
+                    break;
+                case DESC_ENDPOINT:
+                    TRACE("endpoint_desc\n");
+                    break;
+                default:
+                    TRACE("unknown_desc!\n");
+                    break;
+                }
                 break;
+            }
             case SET_DESCRIPTOR :
                 TRACE("set_descriptor\n");
                 break;
@@ -294,11 +397,11 @@ int handle_packet_setup(struct ep_buf *ep)
     }
     else
     {
-        //IN
+        //OUT
         switch (bmRequestType & REQUEST_TYPE)
         {
         case REQUEST_TYPE_STDARD:
-            TRACE("USB output stadard qeuset\n");
+            TRACE("USB output stadard qeuset: ");
             switch(bRequest)
             {
             case GET_STATUS :
@@ -312,6 +415,12 @@ int handle_packet_setup(struct ep_buf *ep)
                 break;
             case SET_ADDRESS :
                 TRACE("set_address\n");
+                TRACE("new address:0x%x\n", wValue);
+                RT_ASSERT(wLength == 0);
+                //set_address(wValue);
+                set_address_flag = 1;
+                gAddress = wValue;
+                ep_send(0, RT_NULL, wLength);
                 break;
             case GET_DESCRIPTOR :
                 TRACE("get_descriptor\n");
@@ -338,6 +447,7 @@ int handle_packet_setup(struct ep_buf *ep)
                 TRACE("unkown!\n");
                 break;
             }
+            break;
         case REQUEST_TYPE_CLASS:
             TRACE("USB output Class qeuset\n");
             break;
@@ -375,98 +485,117 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 {
     static __IO uint16_t istr;
     istr = _GetISTR();
+    if (istr & USB_CNTR_MASK & ISTR_RESET)
+    {
+        _ClearISTR(ISTR_RESET); //do not go into CLR
+        usb_endpoint_config();
+        TRACE(TAG "USB 复位中断 reset\n");
+    }
+
+    if (istr & USB_CNTR_MASK & ISTR_ERR)
+    {
+        _ClearISTR(ISTR_ERR);
+        TRACE(TAG "USB 总线错误中断 ERR\n");
+    }
+
+    if (istr & USB_CNTR_MASK & ISTR_WKUP)
+    {
+        _ClearISTR(ISTR_WKUP);
+        TRACE(TAG "USB 唤醒中断WKUP\n");
+    }
+
+    if (istr & USB_CNTR_MASK & ISTR_SUSP)
+    {
+        _ClearISTR(ISTR_SUSP);
+        TRACE(TAG "USB 挂起中断SUSP\n");
+    }
+
+    if (istr & USB_CNTR_MASK & ISTR_SOF)
+    {
+        _ClearISTR(ISTR_SOF);
+        TRACE(TAG "USB 帧起始中断 SOF\n");
+    }
+
+    if (istr & USB_CNTR_MASK & ISTR_ESOF)
+    {
+        _ClearISTR(ISTR_ESOF);
+        TRACE(TAG "USB 帧起始中断ESOF\n");
+    }
+
+    if (istr & USB_CNTR_MASK & ISTR_DOVR)
+    {
+        _ClearISTR(ISTR_DOVR);
+        TRACE(TAG "USB DMA溢出中断 DOver\n");
+    }
+
     if (istr & ISTR_CTR)
     {
         int ep_id;
         //int dir;
-        TRACE((istr & ISTR_DIR) ? "OUT":"IN");
+        //TRACE((istr & ISTR_DIR) ? "OUT\n":"IN\n"); //FIXME
         ep_id = istr & ISTR_EP_ID;
-        TRACE("endpoint:%d ctr\n", ep_id);
-
+        //TRACE("endpoint:%d ctr\n", ep_id);
+		_SetEPRxStatus(ENDP0, EP_RX_NAK);
+		_SetEPTxStatus(ENDP0, EP_TX_NAK);
         if (istr & ISTR_DIR) //OUT
         {
             int ep_value;
+            _ClearEP_CTR_RX(ep_id);
             ep_value = _GetENDPOINT(ep_id);
             get_endpoint_buf(ep_id, &ep);
-            if (ep_value & (EP_CTR_RX | EP_SETUP))
+            //clear EndPoint RX interrupt flag, EP_CTR_RX is set to 1!
+            //_SetENDPOINT(ep_id, ~EP_CTR_RX);
+
+            if (ep_value & EP_SETUP)
             { //SETUP
+                TRACE("[%4d] USB端点<%d> SETUP packet, len:<%d>\n", __LINE__, ep_id, ep.len);
                 if (ep_id == 0)
                 {
-                    TRACE("%d \t SETUP\n", __LINE__);
                     handle_packet_setup(&ep);
                 }
                 else
                 {
-                    TRACE("%d \t error! setup should only to endpoint 0\n", __LINE__);
+                    TRACE("[%4d] error! setup should only to endpoint 0\n", __LINE__);
                 }
             }
             else
             { //OUT
+                TRACE("[%4d] USB端点<%d> out packet, len:<%d>\n", __LINE__, ep_id, ep.len);
+                dumphex(ep.buffer, ep.len);
                 handle_packet_out(&ep);
             }
         }
         else //IN
         {
             int ep_value;
+            _ClearEP_CTR_TX(ENDP0);
             ep_value = _GetENDPOINT(ep_id);
-            if (ep_value & (EP_CTR_RX | EP_SETUP))
+            if (set_address_flag)
             {
+                TRACE("[%4d] USB IN 中断 set address<0x%x>\n", __LINE__, gAddress);
+                set_address(gAddress);
+                set_address_flag = 0;
+            }
+
+            if (ep_value & (EP_CTR_RX | EP_SETUP))
+            { //SETUP PACKET
                 //should never be here! I guess
-                TRACE("\t:%d SETUP\n", __LINE__);
+                TRACE("[%4d] USB端点<%d> IN 中断 SETUP packet\n", __LINE__, ep_id);
                 handle_packet_setup(&ep);
             }
             else
-            {
-                handle_packet_in(&ep);
+            { //IN PAKCET
+                TRACE("[%4d] USB端点<%d> IN 中断 IN packet\n", __LINE__, ep_id);
+                //FIXME: 考虑如果要发送的数据包很长
+                //则需要继续饭送，并考虑0长度包发送。
+                //handle_packet_in(&ep);
             }
         }
-
-        //clear EndPoint RX interrupt flag
-        _SetENDPOINT(ep_id, ~EP_CTR_RX);
+        enable_endpoint_rx(ep_id, EP0_PACKET_SIZE);
     }
 
-    if (istr & ISTR_DOVR)
-    {
-        TRACE(TAG "DOver\n");
-        _ClearISTR(ISTR_DOVR);
-    }
-
-    if (istr & ISTR_RESET)
-    {
-        TRACE(TAG "reset\n");
-        _ClearISTR(ISTR_RESET);
-        usb_endpoint_config();
-    }
-
-    if (istr & ISTR_ERR)
-    {
-        TRACE(TAG "ERR\n");
-        _ClearISTR(ISTR_ERR);
-    }
-
-    if (istr & ISTR_WKUP)
-    {
-        TRACE(TAG "WKUP\n");
-        _ClearISTR(ISTR_WKUP);
-    }
-
-    if (istr & ISTR_SUSP)
-    {
-        TRACE(TAG "SUSP\n");
-        _ClearISTR(ISTR_SUSP);
-    }
-
-    if (istr & ISTR_SOF)
-    {
-        TRACE(TAG "SOF\n");
-        _ClearISTR(ISTR_SOF);
-    }
-
-    if (istr & ISTR_ESOF)
-    {
-        TRACE(TAG "ESOF\n");
-        _ClearISTR(ISTR_ESOF);
-    }
+__out:
+    return ;
 }
 
 __asm void SystemReset(void)
