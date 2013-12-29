@@ -24,11 +24,11 @@ const u8 Joystick_DeviceDescriptor[] = {
 	0x03,
 	0x00,                       /*bcdDevice rel. 2.00*/ //FIXME<-------------------¼ÓÃÜ¹·°æ±¾ºÅ
 	0x02,
-	1,                          /*Index of string descriptor describing
+	0,                          /*Index of string descriptor describing
                                               manufacturer */
-	2,                          /*Index of string descriptor describing
+	0,                          /*Index of string descriptor describing
                                              product*/
-	3,                          /*Index of string descriptor describing the
+	0,                          /*Index of string descriptor describing the
                                              device serial number */
 	0x01                        /*bNumConfigurations*/
 }; /* Joystick_DeviceDescriptor */
@@ -36,7 +36,6 @@ const u8 Joystick_DeviceDescriptor[] = {
 /* USB Report Descriptor */
 const u8 Joystick_ReportDescriptor[] =
 {
-#if 1
   0x05,          /*Usage Page(Generic Desktop)*/
   0x01,
   0x09,          /*Usage(Mouse)*/
@@ -120,37 +119,6 @@ const u8 Joystick_ReportDescriptor[] =
   /* 72 */
   0x01,
   0xc0
-#else
-0x06, 0xA0, 0xFF,// Usage Page (Vendor-Defined 161)
-0x09, 0xA2, // Usage (Vendor-Defined 162)
-0xA1, 0x01, // Collection (Application)
-0x09, 0xA3, // Usage (Vendor-Defined 163)
-0x09, 0xA4, // Usage (Vendor-Defined 164)
-0x15, 0x81, // Logical Minimum (-127)
-0x25, 0x7F, // Logical Maximum (127)
-0x35, 0x00, // Physical Minimum (0)
-0x45, 0xFF, // Physical Maximum (-1)
-0x75, 0x08, // Report Size (8)
-0x95, 0x40, // Report Count (64)
-0xB1, 0x02, // Feature (Data,Var,Abs,NWrp,Lin,Pref,NNul,NVol,Bit)
-0x09, 0xA5, // Usage (Vendor-Defined 165)
-0x15, 0x81, // Logical Minimum (-127)
-0x25, 0x7F, // Logical Maximum (127)
-0x35, 0x00, // Physical Minimum (0)
-0x45, 0xFF, // Physical Maximum (-1)
-0x75, 0x08, // Report Size (8)
-0x95, 0x40, // Report Count (64)
-0x81, 0x02, // Input (Data,Var,Abs,NWrp,Lin,Pref,NNul,Bit)
-0x09, 0xA6, // Usage (Vendor-Defined 166)
-0x15, 0x81, // Logical Minimum (-127)
-0x25, 0x7F, // Logical Maximum (127)
-0x35, 0x00, // Physical Minimum (0)
-0x45, 0xFF, // Physical Maximum (-1)
-0x75, 0x08, // Report Size (8)
-0x95, 0x40, // Report Count (64)
-0x91, 0x02, // Output (Data,Var,Abs,NWrp,Lin,Pref,NNul,NVol,Bit)
-0xC0, // End Collection
-#endif
 }; /* Joystick_ReportDescriptor */
 
 const struct descriptor ReportDesc =
@@ -162,8 +130,6 @@ const struct descriptor ReportDesc =
                                   USB_DESC_INTERFACE_SIZE + \
                                   USB_DESC_HID_SIZE       + \
                        USB_DESC_ENDPOINT_SIZE * CONFIG_EP_NUM)
-
-#define JOYSTICK_SIZ_REPORT_DESC  1 //FIXME
 
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
 const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
