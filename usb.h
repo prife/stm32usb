@@ -14,7 +14,7 @@ struct descriptor
 #define USB_ENDPOINT_DESCRIPTOR_TYPE            0x05
 #define HID_DESCRIPTOR_TYPE                     0x21
 
-#define DESC_DEVICE_LENGTH  18
+#define DESC_DEVICE_LENGTH        18
 
 #define USB_DESC_CONFIG_SIZE       9
 #define USB_DESC_INTERFACE_SIZE    9
