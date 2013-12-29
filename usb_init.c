@@ -25,7 +25,6 @@ struct usb_send_data
     const u8 * buf;
 };
 struct usb_send_data send_status;
-int ep_status;
 static int set_address_flag;
 static int gAddress;
 
@@ -429,6 +428,7 @@ int handle_packet_setup(struct ep_buf *ep)
                         TRACE("%s\n", str_desc_name_table[wValue & 0xFF]);
                         p = &StringDescTable[(wValue & 0xFF)];
                         memcpy(str_buf, p->desc, p->len);
+                        RT_ASSERT(p->len <= 64);
                         str_buf[0] = p->len;
                         ep_send(0, str_buf, p->len);
                     }
@@ -452,7 +452,6 @@ int handle_packet_setup(struct ep_buf *ep)
                     ep_send(0, ReportDesc.desc, send_len);
                     send_status.sent = send_len;
                     send_status.buf = ReportDesc.desc;
-                    ep_status = EP_RX_NAK;
                     break;
                 default:
                     TRACE("<%d> unknown_desc!\n", wValue >> 8);

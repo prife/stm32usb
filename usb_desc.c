@@ -24,11 +24,11 @@ const u8 Joystick_DeviceDescriptor[] = {
 	0x03,
 	0x00,                       /*bcdDevice rel. 2.00*/ //FIXME<-------------------¼ÓÃÜ¹·°æ±¾ºÅ
 	0x02,
-	0,                          /*Index of string descriptor describing
+	1,                          /*Index of string descriptor describing
                                               manufacturer */
-	0,                          /*Index of string descriptor describing
+	2,                          /*Index of string descriptor describing
                                              product*/
-	0,                          /*Index of string descriptor describing the
+	3,                          /*Index of string descriptor describing the
                                              device serial number */
 	0x01                        /*bNumConfigurations*/
 }; /* Joystick_DeviceDescriptor */
@@ -220,23 +220,23 @@ const u8 Joystick_StringProduct[] = {
 const u8 Joystick_StringSerial[] = {
 	0,//Joystick_StringSerialSize,           /* bLength */
 	USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
-	'J', 0, 'o', 0, 'y', 0, ' ', 0, ' ', 0, ' ', 0, '1', 0, '.', 0,
-	'0', 0, '0', 0, '0', 0, '0', 0
+    'J', 0, 'o', 0, 'y', 0, 'S', 0, 't', 0, 'i', 0, 'c', 0,
+    'k', 0, 'M', 0, 'o', 0, 'u', 0, 's', 0, 'e'
 };
 
 //u8 str_desc_buffer[256];
 const struct descriptor StringDescTable[] =
 {
     {Joystick_StringLangID, sizeof(Joystick_StringLangID), },
-    {Joystick_StringProduct, sizeof(Joystick_StringProduct), },
     {Joystick_StringVendor, sizeof(Joystick_StringVendor), },
+    {Joystick_StringProduct, sizeof(Joystick_StringProduct), },
     {Joystick_StringSerial, sizeof(Joystick_StringSerial), },
 };
 
 const unsigned char * str_desc_name_table[]=
 {
     "Language",
-    "Product",
     "Vendor",
+    "Product",
     "Serial",
 };
