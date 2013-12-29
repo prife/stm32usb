@@ -13,6 +13,7 @@ struct descriptor
 #define USB_INTERFACE_DESCRIPTOR_TYPE           0x04
 #define USB_ENDPOINT_DESCRIPTOR_TYPE            0x05
 #define HID_DESCRIPTOR_TYPE                     0x21
+
 #define DESC_DEVICE_LENGTH  18
 
 #define USB_DESC_CONFIG_SIZE       9
@@ -34,4 +35,5 @@ extern const struct descriptor DeviceDesc;
 extern const struct descriptor ConfigDesc;
 extern const struct descriptor StringDescTable[];
 extern const unsigned char * str_desc_name_table[];
+extern const struct descriptor ReportDesc;
 #endif

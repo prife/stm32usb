@@ -84,8 +84,14 @@ void usb_plugout()
 #define GET_EP_RXBUF_SIZE(nr)  ((_GetBTABLE() + (nr << 4) + 12))
 #endif
 
+/* EP0  */
+/* rx/tx buffer base address */
 #define ENDP0_RXADDR        (0x18)
 #define ENDP0_TXADDR        (0x58)
+
+/* EP1  */
+/* tx buffer base address */
+#define ENDP1_TXADDR        (0x100)
 
 void usb_power_on()
 {
@@ -116,6 +122,7 @@ void usb_endpoint_config()
     /* enable some interrupts */
     _SetCNTR(USB_CNTR_MASK);
 #if 1
+    /* Initialize Endpoint 0 */
     _SetEPType(ENDP0, EP_CONTROL);
     _SetEPTxStatus(ENDP0, EP_TX_STALL);
     _SetEPRxAddr(ENDP0, ENDP0_RXADDR);
@@ -125,6 +132,13 @@ void usb_endpoint_config()
     _SetEPRxStatus(ENDP0, EP_RX_VALID);
 
     _SetEPAddress(0, 0);
+
+    /* Initialize Endpoint 1 */
+    _SetEPType(ENDP1, EP_INTERRUPT);
+    _SetEPTxAddr(ENDP1, ENDP1_TXADDR);
+    _SetEPTxCount(ENDP1, 4);
+    _SetEPRxStatus(ENDP1, EP_RX_DIS);
+    _SetEPTxStatus(ENDP1, EP_TX_NAK);
 #else
     *EPREG_RXBUF_ADDR(ENDP0) = ENDP0_RXADDR;
     *EPREG_RXBUF_SIZE(ENDP0) = ((64>>5)<<10) | 0x8000;
@@ -282,6 +296,7 @@ enum descriptor_type
     DESC_INTERFACE = 4,
     DESC_ENDPOINT = 5,
 };
+#define USB_REPORT_DESCRIPTOR  0x22
 
 short net2host_16bit(u8 * buffer)
 {
@@ -306,11 +321,26 @@ void set_address(int address)
     _SetDADDR((address & 0x7F) | DADDR_EF);
 }
 
-void set_configration()
+/* config: ? TODO */
+void set_configration(int config)
 {
+    if (config)
+    {
+        _SetEPAddress(config, config);
+    }
     //just response an 0-Byte DATA packet
     ep_send(0, NULL, 0);
 }
+
+//for send data more than the max size of the endpoint
+struct usb_send_data
+{
+    int ep; //endpoint
+    int total;//-1 will not send
+    int sent; //alread send bytes
+    const u8 * buf;
+};
+struct usb_send_data send_status;
 
 int handle_packet_setup(struct ep_buf *ep)
 {
@@ -400,8 +430,18 @@ int handle_packet_setup(struct ep_buf *ep)
                 case DESC_ENDPOINT:
                     TRACE("endpoint_desc\n");
                     break;
+                case USB_REPORT_DESCRIPTOR:
+                    TRACE("report_desc\n");
+                    //FIXME: refine code
+                    send_status.ep = 0;
+                    send_status.total = ReportDesc.len;
+                    send_len = MIN(ReportDesc.len, EP0_PACKET_SIZE);
+                    ep_send(0, ReportDesc.desc, send_len);
+                    send_status.sent = send_len;
+                    send_status.buf = ReportDesc.desc;
+                    break;
                 default:
-                    TRACE("unknown_desc!\n");
+                    TRACE("<%d> unknown_desc!\n", wValue >> 8);
                     break;
                 }
                 break;
@@ -502,8 +542,9 @@ int handle_packet_setup(struct ep_buf *ep)
                 TRACE("get_configuration\n");
                 break;
             case SET_CONFIGURATION :
-                TRACE("set_configration\n");
-                set_configration();
+                TRACE("set_configration<%d>\n", wValue & 0xFF);
+                //(wValue & 0xFF) is the config index
+                set_configration(wValue & 0xFF);
                 break;
             case GET_INTERFACE :
                 TRACE("get_interface\n");
@@ -700,6 +741,17 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
                 //FIXME: 考虑如果要发送的数据包很长
                 //则需要继续饭送，并考虑0长度包发送。
                 //handle_packet_in(&ep);
+                if (send_status.sent < send_status.total)
+                {
+                    int len;
+                    len = MIN(send_status.total-send_status.sent, EP0_PACKET_SIZE);
+                    ep_send(0, send_status.buf + send_status.sent, len);
+                    send_status.sent += len;
+                } else if ((send_status.sent > 0)
+                         && ((send_status.sent %  EP0_PACKET_SIZE) == 0))
+                {
+                    ep_send(send_status.ep, RT_NULL, 0);
+                }
             }
         }
         enable_endpoint_rx(ep_id, EP0_PACKET_SIZE);
