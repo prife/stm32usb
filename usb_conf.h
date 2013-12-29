@@ -1,7 +1,15 @@
 #ifndef USB_H
 #define USB_H
 
+#define USB_LOG
+
+#ifdef USB_LOG
 #define TRACE  rt_kprintf
+#define DUMPHEX dumphex
+#else
+#define TRACE(...)
+#define DUMPHEX(...)
+#endif
 
 #define USB_CNTR_MASK  \
     (CNTR_CTRM  | CNTR_WKUPM \

@@ -17,6 +17,18 @@
 #define USB_DISCONNECT_PIN                  GPIO_Pin_11
 #define RCC_APB2Periph_GPIO_DISCONNECT      RCC_APB2Periph_GPIOF
 
+struct usb_send_data
+{
+    int ep; //endpoint
+    int total;//-1 will not send
+    int sent; //alread send bytes
+    const u8 * buf;
+};
+struct usb_send_data send_status;
+int ep_status;
+static int set_address_flag;
+static int gAddress;
+
 void usb_isr_init(void)
 {
     NVIC_InitTypeDef NVIC_InitStructure;
@@ -104,6 +116,19 @@ void usb_power_on()
     _SetCNTR(USB_CNTR_MASK);
 }
 
+void rt_mouse_thread_entry(void * para)
+{
+    extern unsigned char JoyState(void);
+    extern void Joystick_Send(unsigned char Keys);
+    unsigned char key;
+    while(1)
+    {
+        //rt_thread_delay(RT_TICK_PER_SECOND / 100);
+        if ((key = JoyState()) != 0)
+            Joystick_Send(key);
+    }
+}
+
 void usb_init()
 {
     usb_isr_init();
@@ -111,6 +136,17 @@ void usb_init()
     usb_cablepin_init();
     usb_cable_config(USB_CABLE_CONNECT);
     usb_power_on();
+    /* ADD your init code here */
+    {
+        rt_thread_t thread;
+        extern void Joystick_gpio_init(void);
+        Joystick_gpio_init();
+        thread = rt_thread_create("init",
+                                   rt_mouse_thread_entry, RT_NULL,
+                                   512, 30, 20);
+        RT_ASSERT(thread != NULL);
+        rt_thread_startup(thread);
+    }
 }
 
 /**
@@ -121,7 +157,7 @@ void usb_endpoint_config()
 {
     /* enable some interrupts */
     _SetCNTR(USB_CNTR_MASK);
-#if 1
+
     /* Initialize Endpoint 0 */
     _SetEPType(ENDP0, EP_CONTROL);
     _SetEPTxStatus(ENDP0, EP_TX_STALL);
@@ -131,21 +167,14 @@ void usb_endpoint_config()
     _SetEPRxCount(ENDP0, EP0_PACKET_SIZE );
     _SetEPRxStatus(ENDP0, EP_RX_VALID);
 
-    _SetEPAddress(0, 0);
-
     /* Initialize Endpoint 1 */
     _SetEPType(ENDP1, EP_INTERRUPT);
     _SetEPTxAddr(ENDP1, ENDP1_TXADDR);
     _SetEPTxCount(ENDP1, 4);
     _SetEPRxStatus(ENDP1, EP_RX_DIS);
     _SetEPTxStatus(ENDP1, EP_TX_NAK);
-#else
-    *EPREG_RXBUF_ADDR(ENDP0) = ENDP0_RXADDR;
-    *EPREG_RXBUF_SIZE(ENDP0) = ((64>>5)<<10) | 0x8000;
 
-    // more bit need set
-    _SetENDPOINT(0, EP_RX_VALID | EP_CONTROL);
-#endif
+    _SetEPAddress(0, 0);
     /* enable USB endpoint and config EP0 */
     _SetDADDR(DADDR_EF | 0);
 }
@@ -177,16 +206,10 @@ void get_endpoint_buf(int ep_nr, struct ep_buf *ep)
     u32 * ptr = (u32*)(((u16)*EPREG_RXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
     ep->len = (u16)(*EPREG_RXBUF_SIZE(ep_nr)) & 0x3FF;
 
-    //TRACE("EPREG_RXBUF_ADDR:%x\n", *EPREG_RXBUF_ADDR(ep_nr));
-    //TRACE("EPREG_RXBUF_SIZE:%x\n", *EPREG_RXBUF_SIZE(ep_nr));
-    //TRACE("ptr:%p, len:%d\n", ptr, ep->len);
-
-    //dumphex(ptr, ep->len);
     for (i=0; i<ep->len; i+=2)
     {
         *(rt_uint16_t *)(&ep->buffer[i]) = (*ptr++) & 0xFFFF;
     }
-    //dumphex((u32*)PMA_ADDR, 256);
 }
 
 void get_ep_buf(int ep_nr, struct ep_buf *ep, int len)
@@ -210,7 +233,7 @@ void send_endpoint(int ep_nr, struct ep_buf *ep)
     //RT_ASSERT(0);
 
     TRACE("send ep: ptr %p, len %d\n", ptr, ep->len);
-    dumphex((u8*)ep->send_buffer, ep->len);
+    DUMPHEX((u8*)ep->send_buffer, ep->len);
     //set USB_COUNTn_TX the Length to send when got IN packet
     if (ep->len & 0x1)
         ep->len ++;
@@ -232,8 +255,8 @@ void ep_send(int ep_nr, const u8 * buf, int len)
     int i;
     u32 * ptr = (u32*)(((u16)*EPREG_TXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
 
-    TRACE("send ep: ptr %p, len %d\n", ptr, len);
-    dumphex((u8*)buf, len);
+    TRACE("send ep<%d>: ptr %p, len %d\n", ep_nr, ptr, len);
+    DUMPHEX((u8*)buf, len);
     for (i=0; i<len; i+=2)
     {
         (*ptr++) = ((rt_uint16_t)buf[i+1] << 8) | buf[i];
@@ -311,13 +334,11 @@ int net2host_32bit(u8 * buffer)
             (((int)buffer[0])));
 }
 
-static int set_address_flag;
-static int gAddress;
 void set_address(int address)
 {
     //USB_DAADR
     _SetEPAddress(0, 0);
-    _SetEPAddress(1, 1);
+    _SetEPAddress(1, 1);//FIXME: is this usable?
     _SetDADDR((address & 0x7F) | DADDR_EF);
 }
 
@@ -326,21 +347,13 @@ void set_configration(int config)
 {
     if (config)
     {
-        _SetEPAddress(config, config);
+        //TODO: add what?
     }
     //just response an 0-Byte DATA packet
     ep_send(0, NULL, 0);
 }
 
 //for send data more than the max size of the endpoint
-struct usb_send_data
-{
-    int ep; //endpoint
-    int total;//-1 will not send
-    int sent; //alread send bytes
-    const u8 * buf;
-};
-struct usb_send_data send_status;
 
 int handle_packet_setup(struct ep_buf *ep)
 {
@@ -363,7 +376,7 @@ int handle_packet_setup(struct ep_buf *ep)
     wIndex = net2host_16bit(&ep->buffer[4]);
     wLength = net2host_16bit(&ep->buffer[6]);
 
-    dumphex(ep->buffer, ep->len);
+    DUMPHEX(ep->buffer, ep->len);
     if (bmRequestType & 0x80)
     {
         //IN
@@ -439,6 +452,7 @@ int handle_packet_setup(struct ep_buf *ep)
                     ep_send(0, ReportDesc.desc, send_len);
                     send_status.sent = send_len;
                     send_status.buf = ReportDesc.desc;
+                    ep_status = EP_RX_NAK;
                     break;
                 default:
                     TRACE("<%d> unknown_desc!\n", wValue >> 8);
@@ -665,24 +679,20 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
     if (istr & ISTR_CTR)
     {
         int ep_id;
-        //int dir;
-        //TRACE((istr & ISTR_DIR) ? "OUT\n":"IN\n"); //FIXME
         ep_id = istr & ISTR_EP_ID;
-        //TRACE("endpoint:%d ctr\n", ep_id);
-		_SetEPRxStatus(ENDP0, EP_RX_NAK);
-		_SetEPTxStatus(ENDP0, EP_TX_NAK);
+        _SetEPRxStatus(ep_id, EP_RX_NAK);
+        _SetEPTxStatus(ep_id, EP_TX_NAK);
         if (istr & ISTR_DIR) //OUT
         {
             int ep_value;
-            _ClearEP_CTR_RX(ep_id);
             ep_value = _GetENDPOINT(ep_id);
             get_endpoint_buf(ep_id, &ep);
             //clear EndPoint RX interrupt flag, EP_CTR_RX is set to 1!
-            //_SetENDPOINT(ep_id, ~EP_CTR_RX);
 
+            _ClearEP_CTR_RX(ep_id);
             if (ep_value & EP_SETUP)
             { //SETUP
-                TRACE("[%4d] USB端点<%d> SETUP packet, len:<%d>\n", __LINE__, ep_id, ep.len);
+                TRACE("[%4d] USB端点<%d> SETUP packet, reg<0x%x>, len:<%d>\n", __LINE__, ep_id, ep_value, ep.len);
                 if (ep_id == 0)
                 {
                     if (ep.len == 0)
@@ -690,7 +700,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
                         rt_memset(ep.buffer, 0, sizeof(ep.buffer));
                         TRACE("[%4d] dump 8 bytes:\n", __LINE__);
                         get_ep_buf(0, &ep, 8);
-                        dumphex(ep.buffer, 8);
+                        DUMPHEX(ep.buffer, 8);
                     }
                     handle_packet_setup(&ep);
                 }
@@ -701,57 +711,50 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
             }
             else
             { //OUT
-                TRACE("[%4d] USB端点<%d> out packet, len:<%d>\n", __LINE__, ep_id, ep.len);
-                dumphex(ep.buffer, ep.len);
-                if (ep.len == 0)
-                {
-                    TRACE("[%4d] dump 8 bytes:\n", __LINE__);
-                    get_ep_buf(0, &ep, 8);
-                    dumphex(ep.buffer, 8);
-                    //ep_send(ep_id, RT_NULL, 0);
-                }
-                else
-                {
-                    TRACE("[%4d] how to handle this?!\n");
-                    handle_packet_out(&ep);
-                }
+                //how to handle this?!
+                TRACE("[%4d] USB端点<%d> out packet, reg:<0x%x>, len:<%d>\n", __LINE__, ep_id, ep_value, ep.len);
+                //handle_packet_out(&ep);
             }
         }
         else //IN
         {
             int ep_value;
-            _ClearEP_CTR_TX(ENDP0);
+            _ClearEP_CTR_TX(ep_id);
             ep_value = _GetENDPOINT(ep_id);
             if (set_address_flag)
             {
-                TRACE("[%4d] USB IN 中断 set address<0x%x>\n", __LINE__, gAddress);
+                TRACE("[%4d] USB IN 中断 set address<0x%x>, reg:<0x%x>\n", __LINE__, gAddress, ep_value);
                 set_address(gAddress);
                 set_address_flag = 0;
             }
 
-            if (ep_value & (EP_CTR_RX | EP_SETUP))
+            if (ep_value & EP_SETUP)
             { //SETUP PACKET
                 //should never be here! I guess
-                TRACE("[%4d] USB端点<%d> IN 中断 SETUP packet\n", __LINE__, ep_id);
+                TRACE("[%4d] USB端点<%d> IN 中断 SETUP packet, reg<0x%x>\n", __LINE__, ep_id, ep_value);
                 handle_packet_setup(&ep);
             }
             else
             { //IN PAKCET
-                TRACE("[%4d] USB端点<%d> IN 中断 IN packet\n", __LINE__, ep_id);
-                //FIXME: 考虑如果要发送的数据包很长
-                //则需要继续饭送，并考虑0长度包发送。
-                //handle_packet_in(&ep);
+                //考虑如果要发送的数据包很长则需要继续发送，并考虑0长度包发送。
                 if (send_status.sent < send_status.total)
                 {
                     int len;
                     len = MIN(send_status.total-send_status.sent, EP0_PACKET_SIZE);
                     ep_send(0, send_status.buf + send_status.sent, len);
                     send_status.sent += len;
+                    TRACE("[%4d] USB端点<%d> IN 中断 IN packet, reg<0x%x>\n", __LINE__, ep_id, ep_value);
                 } else if ((send_status.sent > 0)
                          && ((send_status.sent %  EP0_PACKET_SIZE) == 0))
                 {
                     ep_send(send_status.ep, RT_NULL, 0);
+                    TRACE("[%4d] USB端点<%d> IN 中断 IN packet, reg<0x%x>\n", __LINE__, ep_id, ep_value);
                 }
+                else
+                {
+                    TRACE("[%4d] USB端点<%d> IN 中断 IN packet, reg<0x%x>\n", __LINE__, ep_id, ep_value);
+                }
+                //handle_packet_in(&ep);
             }
         }
         enable_endpoint_rx(ep_id, EP0_PACKET_SIZE);
