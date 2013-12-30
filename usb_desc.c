@@ -20,8 +20,8 @@ const u8 Joystick_DeviceDescriptor[] = {
 	0x40,                       /*bMaxPacketSize40*/
 	0x6E,                       /*idVendor (0x3689)*/   //FIXME<-------------------厂商ID字段
 	0x09,
-	0x04,                       /*idProduct = 0x8762*/  //FIXME<-------------------idProduct
-	0x03,
+	0x02,                       /*idProduct = 0x8762*/  //FIXME<-------------------idProduct
+	0x00,
 	0x00,                       /*bcdDevice rel. 2.00*/ //FIXME<-------------------加密狗版本号
 	0x02,
 	1,                          /*Index of string descriptor describing
@@ -36,89 +36,38 @@ const u8 Joystick_DeviceDescriptor[] = {
 /* USB Report Descriptor */
 const u8 Joystick_ReportDescriptor[] =
 {
-  0x05,          /*Usage Page(Generic Desktop)*/
-  0x01,
-  0x09,          /*Usage(Mouse)*/
-  0x02,
-  0xA1,          /*Collection(Logical)*/
-  0x01,
-  0x09,          /*Usage(Pointer)*/
-  0x01,
-  /* 8 */
-  0xA1,          /*Collection(Linked)*/
-  0x00,
-  0x05,          /*Usage Page(Buttons)*/
-  0x09,
-  0x19,          /*Usage Minimum(1)*/
-  0x01,
-  0x29,          /*Usage Maximum(3)*/
-  0x03,
-  /* 16 */
-  0x15,          /*Logical Minimum(0)*/
-  0x00,
-  0x25,          /*Logical Maximum(1)*/
-  0x01,
-  0x95,          /*Report Count(3)*/
-  0x03,
-  0x75,          /*Report Size(1)*/
-  0x01,
-  /* 24 */
-  0x81,          /*Input(Variable)*/
-  0x02,
-  0x95,          /*Report Count(1)*/
-  0x01,
-  0x75,          /*Report Size(5)*/
-  0x05,
-  0x81,          /*Input(Constant,Array)*/
-  0x01,
-  /* 32 */
-  0x05,          /*Usage Page(Generic Desktop)*/
-  0x01,
-  0x09,          /*Usage(X axis)*/
-  0x30,
-  0x09,          /*Usage(Y axis)*/
-  0x31,
-  0x09,          /*Usage(Wheel)*/
-  0x38,
-  /* 40 */
-  0x15,          /*Logical Minimum(-127)*/
-  0x81,
-  0x25,          /*Logical Maximum(127)*/
-  0x7F,
-  0x75,          /*Report Size(8)*/
-  0x08,
-  0x95,          /*Report Count(3)*/
-  0x03,
-  /* 48 */
-  0x81,          /*Input(Variable, Relative)*/
-  0x06,
-  0xC0,          /*End Collection*/
-  0x09,
-  0x3c,
-  0x05,
-  0xff,
-  0x09,
-  /* 56 */
-  0x01,
-  0x15,
-  0x00,
-  0x25,
-  0x01,
-  0x75,
-  0x01,
-  0x95,
-  /* 64 */
-  0x02,
-  0xb1,
-  0x22,
-  0x75,
-  0x06,
-  0x95,
-  0x01,
-  0xb1,
-  /* 72 */
-  0x01,
-  0xc0
+    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+    0x09, 0x06,                    // USAGE (Keyboard)
+    0xa1, 0x01,                    // COLLECTION (Application)
+    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)
+    0x19, 0xe0,                    //   USAGE_MINIMUM (Keyboard LeftControl)
+    0x29, 0xe7,                    //   USAGE_MAXIMUM (Keyboard Right GUI)
+    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+    0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
+    0x75, 0x01,                    //   REPORT_SIZE (1)
+    0x95, 0x08,                    //   REPORT_COUNT (8)
+    0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+    0x95, 0x01,                    //   REPORT_COUNT (1)
+    0x75, 0x08,                    //   REPORT_SIZE (8)
+    0x81, 0x03,                    //   INPUT (Cnst,Var,Abs)
+    0x95, 0x05,                    //   REPORT_COUNT (5)
+    0x75, 0x01,                    //   REPORT_SIZE (1)
+    0x05, 0x08,                    //   USAGE_PAGE (LEDs)
+    0x19, 0x01,                    //   USAGE_MINIMUM (Num Lock)
+    0x29, 0x05,                    //   USAGE_MAXIMUM (Kana)
+    0x91, 0x02,                    //   OUTPUT (Data,Var,Abs)
+    0x95, 0x01,                    //   REPORT_COUNT (1)
+    0x75, 0x03,                    //   REPORT_SIZE (3)
+    0x91, 0x03,                    //   OUTPUT (Cnst,Var,Abs)
+    0x95, 0x06,                    //   REPORT_COUNT (6)
+    0x75, 0x08,                    //   REPORT_SIZE (8)
+    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+    0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
+    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)
+    0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
+    0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
+    0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
+    0xc0                           // END_COLLECTION
 }; /* Joystick_ReportDescriptor */
 
 const struct descriptor ReportDesc =
@@ -154,7 +103,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	CONFIG_EP_NUM, /*bNumEndpoints*/				    //FIXME<----------------端点数目
 	0x03,         /*bInterfaceClass: HID*/
 	0,         /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
-	0,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
+	1,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
 	0,            /*iInterface: Index of string descriptor*/
 	/******************** Descriptor of Joystick Mouse HID ********************/
 	/* 18 */
