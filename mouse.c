@@ -1,5 +1,7 @@
 #include <stm32f10x.h>
 #include "usb_regs.h"
+#include "usb_conf.h"
+#include "usb.h"
 
 #define JOY_UP              GPIO_Pin_11    /* PG.11 */
 #define JOY_DOWN            GPIO_Pin_8     /* PG.8 */
@@ -124,3 +126,52 @@ void Joystick_Send(unsigned char Keys)
   ep_send(ENDP1, Mouse_Buffer, 4);
 }
 
+void usb_hw_ep_config(void)
+{
+    /* enable some interrupts */
+    _SetCNTR(USB_CNTR_MASK);
+
+    /* Initialize Endpoint 0 */
+    _SetEPType(ENDP0, EP_CONTROL);
+    _SetEPTxStatus(ENDP0, EP_TX_STALL);
+    _SetEPRxAddr(ENDP0, ENDP0_RXADDR);
+    _SetEPTxAddr(ENDP0, ENDP0_TXADDR);
+    _ClearEP_KIND(ENDP0);
+    _SetEPRxCount(ENDP0, EP0_PACKET_SIZE );
+    _SetEPRxStatus(ENDP0, EP_RX_VALID);
+
+    /* Initialize Endpoint 1 */
+    _SetEPType(ENDP1, EP_INTERRUPT);
+    _SetEPTxAddr(ENDP1, ENDP1_TXADDR);
+    _SetEPTxCount(ENDP1, 4);
+    _SetEPRxStatus(ENDP1, EP_RX_DIS);
+    _SetEPTxStatus(ENDP1, EP_TX_NAK);
+
+    _SetEPAddress(0, 0);
+    /* enable USB endpoint and config EP0 */
+    _SetDADDR(DADDR_EF | 0);
+}
+
+#include <rtthread.h>
+
+void rt_mouse_thread_entry(void * para)
+{
+    unsigned char key;
+    while(1)
+    {
+        //rt_thread_delay(RT_TICK_PER_SECOND / 100);
+        if ((key = JoyState()) != 0)
+            Joystick_Send(key);
+    }
+}
+
+void usb_app_init(void)
+{
+    rt_thread_t thread;
+    Joystick_gpio_init();
+    thread = rt_thread_create("init",
+                               rt_mouse_thread_entry, RT_NULL,
+                               512, 30, 20);
+    RT_ASSERT(thread != RT_NULL);
+    rt_thread_startup(thread);
+}

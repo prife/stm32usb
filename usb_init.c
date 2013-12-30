@@ -11,6 +11,9 @@
 #ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
+static int net2host_32bit(u8 * buffer);
+static short net2host_16bit(u8 * buffer);
+static void dumphex(u8 * buf, u16 count);
 
 struct std_device_reqeust
 {
@@ -144,19 +147,8 @@ void usb_power_on()
     _SetCNTR(USB_CNTR_MASK);
 }
 
-void rt_mouse_thread_entry(void * para)
-{
-    extern unsigned char JoyState(void);
-    extern void Joystick_Send(unsigned char Keys);
-    unsigned char key;
-    while(1)
-    {
-        //rt_thread_delay(RT_TICK_PER_SECOND / 100);
-        if ((key = JoyState()) != 0)
-            Joystick_Send(key);
-    }
-}
-
+extern void usb_app_init(void);
+extern void usb_hw_ep_config(void);
 void usb_init()
 {
     usb_isr_init();
@@ -165,56 +157,7 @@ void usb_init()
     usb_cable_config(USB_CABLE_CONNECT);
     usb_power_on();
     /* ADD your init code here */
-    {
-        rt_thread_t thread;
-        extern void Joystick_gpio_init(void);
-        Joystick_gpio_init();
-        thread = rt_thread_create("init",
-                                   rt_mouse_thread_entry, RT_NULL,
-                                   512, 30, 20);
-        RT_ASSERT(thread != NULL);
-        rt_thread_startup(thread);
-    }
-}
-
-void usb_ep_config()
-{
-    /* enable some interrupts */
-    _SetCNTR(USB_CNTR_MASK);
-
-    /* Initialize Endpoint 0 */
-    _SetEPType(ENDP0, EP_CONTROL);
-    _SetEPTxStatus(ENDP0, EP_TX_STALL);
-    _SetEPRxAddr(ENDP0, ENDP0_RXADDR);
-    _SetEPTxAddr(ENDP0, ENDP0_TXADDR);
-    _ClearEP_KIND(ENDP0);
-    _SetEPRxCount(ENDP0, EP0_PACKET_SIZE );
-    _SetEPRxStatus(ENDP0, EP_RX_VALID);
-
-    /* Initialize Endpoint 1 */
-    _SetEPType(ENDP1, EP_INTERRUPT);
-    _SetEPTxAddr(ENDP1, ENDP1_TXADDR);
-    _SetEPTxCount(ENDP1, 4);
-    _SetEPRxStatus(ENDP1, EP_RX_DIS);
-    _SetEPTxStatus(ENDP1, EP_TX_NAK);
-
-    _SetEPAddress(0, 0);
-    /* enable USB endpoint and config EP0 */
-    _SetDADDR(DADDR_EF | 0);
-}
-
-void dumphex(u8 * buf, u16 count)
-{
-    int i;
-
-    for (i=0; i<count; i++)
-    {
-        rt_kprintf("%02x ", buf[i]);
-        if ((i+1)%16 == 0)
-            rt_kprintf("\n");
-    }
-    if ((i+1)%16 != 0)
-        rt_kprintf("\n");
+    usb_app_init();
 }
 
 void ep_get(int ep_nr, struct ep_buf *ep)
@@ -258,23 +201,10 @@ void ep_send(int ep_nr, const u8 * buf, int len)
 	_SetEPTxStatus(ep_nr, EP_TX_VALID);
 }
 //enable ep N valid
-void enable_endpoint_rx(int ep_nr, int count)
+void ep_rx_en(int ep_nr, int count)
 {
     _SetEPRxCount(ep_nr, count);
 	_SetEPRxStatus(ep_nr, EP_RX_VALID);
-}
-
-short net2host_16bit(u8 * buffer)
-{
-    return ((((short)buffer[1]) << 8) | buffer[0]);
-}
-
-int net2host_32bit(u8 * buffer)
-{
-    return ((((int)buffer[3]) << 24) |
-            (((int)buffer[2]) << 16) |
-            (((int)buffer[1]) << 8)  |
-            (((int)buffer[0])));
 }
 
 void set_address(int address)
@@ -572,7 +502,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
     if (istr & USB_CNTR_MASK & ISTR_RESET)
     {
         _ClearISTR(ISTR_RESET); //do not go into CLR
-        usb_ep_config();
+        usb_hw_ep_config();
         TRACE("\n####### USB ¸´Î»ÖÐ¶Ï reset ######\n");
     }
 
@@ -693,10 +623,37 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
                 //handle_packet_in(&ep);
             }
         }
-        enable_endpoint_rx(ep_id, EP0_PACKET_SIZE);
+        ep_rx_en(ep_id, EP0_PACKET_SIZE);
     }
 
     return ;
+}
+
+void dumphex(u8 * buf, u16 count)
+{
+    int i;
+
+    for (i=0; i<count; i++)
+    {
+        rt_kprintf("%02x ", buf[i]);
+        if ((i+1)%16 == 0)
+            rt_kprintf("\n");
+    }
+    if ((i+1)%16 != 0)
+        rt_kprintf("\n");
+}
+
+short net2host_16bit(u8 * buffer)
+{
+    return ((((short)buffer[1]) << 8) | buffer[0]);
+}
+
+int net2host_32bit(u8 * buffer)
+{
+    return ((((int)buffer[3]) << 24) |
+            (((int)buffer[2]) << 16) |
+            (((int)buffer[1]) << 8)  |
+            (((int)buffer[0])));
 }
 
 __asm void SystemReset(void)
