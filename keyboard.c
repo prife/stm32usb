@@ -11,12 +11,21 @@
 #define JOY_RIGHT_BUTTON    GPIO_Pin_13    /* PC.13 */
 
 #define CURSOR_STEP     5
-#define DOWN            1
-#define LEFT            2
-#define RIGHT           3
-#define UP              4
-#define LEFT_BUTTON     5
-#define RIGHT_BUTTON    6 
+
+enum HWKEYS
+{
+    ARROW_UP = 1,//indicate that the key is up
+    DOWN,
+    LEFT,
+    RIGHT,
+    UP,
+
+    KEY_SEPERATE=63,
+
+    BTN_UP,//indicate that the key is up
+    LEFT_BUTTON,
+    RIGHT_BUTTON,
+};
 
 extern void ep_send(int ep_nr, const u8 * buf, int len);
 
@@ -88,35 +97,60 @@ unsigned char JoyState(void)
 //Key value: http://www.amobbs.com/thread-4332557-1-1.html
 void Joystick_Send(unsigned char Keys)
 {
-    static unsigned char buf[8];
-    int i = 2;
+    static unsigned char buf[9];
+    int i = 3;
 
-    memset(buf, 0, 8);
+    memset(buf, 0, sizeof(buf));
+    buf[0] = 1;
+    if (Keys == ARROW_UP)
+    {
+        ep_send(ENDP2, buf, 5);
+        return ;
+    }
+
+    if (Keys == BTN_UP)
+    {
+        ep_send(ENDP1, buf, 9);
+        return ;
+    }
+
+    if (Keys <= KEY_SEPERATE)
+    {
+        unsigned char X=0, Y=0;
+        switch(Keys)
+        {
+        case LEFT:
+          X -= CURSOR_STEP;
+          break;
+        case RIGHT:
+          X += CURSOR_STEP;
+          break;
+        case UP:
+          Y -= CURSOR_STEP;
+          break;
+        case DOWN:
+          Y += CURSOR_STEP;
+          break;
+        }
+        buf[2] = X;
+        buf[3] = Y;
+        ep_send(ENDP2, buf, 5);
+        return ;
+    }
+
     switch (Keys)
     {
-    case LEFT:
-        buf[i] = 4; i++;
-        break;
-    case RIGHT:
-        buf[i] = 5; i++;
-        break;
-    case UP:
-        buf[i] = 6; i++;
-        break;
-    case DOWN:
-        buf[i] = 7; i++;
-        break;
     case LEFT_BUTTON:
-        buf[i] = 8; i++;
+        buf[i] = 4; i++;//'A'
         break;
     case RIGHT_BUTTON:
-        buf[i] = 0x39; i++; //CapsLock
+        buf[i] = 5; i++;//'B'
         break;
     default:
         break;
     }
 
-    ep_send(ENDP1, buf, 8);
+    ep_send(ENDP1, buf, 9);
 }
 
 void usb_hw_ep_config(void)
@@ -170,7 +204,8 @@ void rt_keyboard_thread_entry(void * para)
 
         Joystick_Send(key);
         while(JoyState() != 0);
-        Joystick_Send(0);
+        if(key > KEY_SEPERATE)
+            Joystick_Send(BTN_UP);
     }
 }
 
