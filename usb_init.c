@@ -282,10 +282,23 @@ int handle_packet_setup(struct ep_buf *ep)
                     break;
                 }
                 case DESC_CONFIGURATION:
-                    TRACE("config_desc\n");
-                    send_len = MIN(wLength, ConfigDesc.len);
-                    RT_ASSERT(send_len <= 64); //FIXME
-                    ep_send(0, ConfigDesc.desc, send_len);
+                    TRACE("config_desc [%d]\n", ConfigDesc.len);
+                    //send_len = MIN(wLength, ConfigDesc.len);
+                    //RT_ASSERT(send_len <= 64); //FIXME
+                    //ep_send(0, ConfigDesc.desc, send_len);
+                    if (wLength < ConfigDesc.len)
+                    {
+                        ep_send(0, ConfigDesc.desc, wLength);
+                    }
+                    else
+                    {
+                        send_status.ep = 0;
+                        send_status.total = ConfigDesc.len;
+                        send_len = MIN(ConfigDesc.len, EP0_PACKET_SIZE);
+                        ep_send(0, ConfigDesc.desc, send_len);
+                        send_status.sent = send_len;
+                        send_status.buf =ConfigDesc.desc;
+                    }
                     break;
                 case DESC_STRING:
                     TRACE("string_desc:%d-->",(wValue & 0xFF));
@@ -312,14 +325,19 @@ int handle_packet_setup(struct ep_buf *ep)
                     TRACE("endpoint_desc\n");
                     break;
                 case DESC_REPORT:
-                    TRACE("report_desc\n");
+                    TRACE("report_desc [%d]\n", wIndex);
                     //FIXME: refine code
+                    if (wIndex >= sizeof(ReportDesc)/sizeof(ReportDesc[0]))
+                    {
+                        TRACE("\t\t-->invalid number\n");
+                        break;
+                    }
                     send_status.ep = 0;
-                    send_status.total = ReportDesc.len;
-                    send_len = MIN(ReportDesc.len, EP0_PACKET_SIZE);
-                    ep_send(0, ReportDesc.desc, send_len);
+                    send_status.total = ReportDesc[wIndex].len;
+                    send_len = MIN(ReportDesc[wIndex].len, EP0_PACKET_SIZE);
+                    ep_send(0, ReportDesc[wIndex].desc, send_len);
                     send_status.sent = send_len;
-                    send_status.buf = ReportDesc.desc;
+                    send_status.buf = ReportDesc[wIndex].desc;
                     break;
                 default:
                     TRACE("<%d> unknown_desc!\n", wValue >> 8);

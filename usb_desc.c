@@ -20,7 +20,7 @@ const u8 Joystick_DeviceDescriptor[] = {
 	0x40,                       /*bMaxPacketSize40*/
 	0x6E,                       /*idVendor (0x3689)*/   //FIXME<-------------------厂商ID字段
 	0x09,
-	0x02,                       /*idProduct = 0x8762*/  //FIXME<-------------------idProduct
+	0x03,                       /*idProduct = 0x8762*/  //FIXME<-------------------idProduct
 	0x00,
 	0x00,                       /*bcdDevice rel. 2.00*/ //FIXME<-------------------加密狗版本号
 	0x02,
@@ -34,7 +34,7 @@ const u8 Joystick_DeviceDescriptor[] = {
 }; /* Joystick_DeviceDescriptor */
 
 /* USB Report Descriptor */
-static char MouseReportDescriptor[52] = {
+static const u8 MouseReportDescriptor[] = {
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
     0x09, 0x02,                    // USAGE (Mouse)
     0xa1, 0x01,                    // COLLECTION (Application)
@@ -100,14 +100,18 @@ static const u8 KeyboardReportDescriptor[] =
     0xc0                           // END_COLLECTION
 }; /*  KeyboardReportDescriptor */
 
-const struct descriptor ReportDesc =
-{ KeyboardReportDescriptor, sizeof(KeyboardReportDescriptor), };
+const struct descriptor ReportDesc[2] =
+{ 
+    KeyboardReportDescriptor, sizeof(KeyboardReportDescriptor),
+    MouseReportDescriptor, sizeof(MouseReportDescriptor),
+};
+
 
 /* USB Configuration Descriptor */
 
-#define JOYSTICK_SIZ_CONFIG_DESC (USB_DESC_CONFIG_SIZE    + \
-                                  USB_DESC_INTERFACE_SIZE + \
-                                  USB_DESC_HID_SIZE       + \
+#define JOYSTICK_SIZ_CONFIG_DESC (USB_DESC_CONFIG_SIZE        + \
+                                  USB_DESC_INTERFACE_SIZE * 2 + \
+                                  USB_DESC_HID_SIZE * 2       + \
                        USB_DESC_ENDPOINT_SIZE * CONFIG_EP_NUM)
 
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
@@ -117,40 +121,39 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	JOYSTICK_SIZ_CONFIG_DESC,
 	/* wTotalLength: Bytes returned */
 	0x00,
-	0x01,         /*bNumInterfaces: 1 interface*/
+	0x02,         /*bNumInterfaces: 1 interface*/
 	0x01,         /*bConfigurationValue: Configuration value*/
 	0x00,         /*iConfiguration: Index of string descriptor describing
                                  the configuration*///<------------??
 	0x80,         /*bmAttributes: self powered */
 	0x32,         /*MaxPower 100 mA: this current is used for detecting Vbus*/
 
-	/************** Descriptor of Joystick Mouse interface ****************/
+	/************** Descriptor of Joystick keyboard interface ****************/
 	/* 09 */
 	0x09,         /*bLength: Interface Descriptor size*/
 	USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
 	0x00,         /*bInterfaceNumber: Number of Interface*/
 	0x00,         /*bAlternateSetting: Alternate setting*/
-	CONFIG_EP_NUM, /*bNumEndpoints*/				    //FIXME<----------------端点数目
+	2,            /*bNumEndpoints*/				    //FIXME<----------------端点数目
 	0x03,         /*bInterfaceClass: HID*/
-	0,         /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
+	1,         /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
 	1,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
 	0,            /*iInterface: Index of string descriptor*/
-	/******************** Descriptor of Joystick Mouse HID ********************/
+	/******************** Descriptor of Joystick keyboard HID ********************/
 	/* 18 */
 	0x09,         /*bLength: HID Descriptor size*/
 	HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
 	0x10,         /*bcdHID: HID Class Spec release number*/
 	0x01,
-	0x00,         /*bCountryCode: Hardware target country*/
+	0x21,         /*bCountryCode: Hardware target country*/
 	0x01,         /*bNumDescriptors: Number of HID class descriptors to follow*/
 	0x22,         /*bDescriptorType*/
-	sizeof(Joystick_ReportDescriptor),/*wItemLength: Total length of Report descriptor*/
+	sizeof(KeyboardReportDescriptor),/*wItemLength: Total length of Report descriptor*/
 	0x00,
-	/******************** Descriptor of Joystick Mouse endpoint ********************/
+	/******************** Descriptor of Joystick keyboard endpoint ********************/
 	/* 27 */
 	0x07,          /*bLength: Endpoint Descriptor size*/
 	USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-
 	0x81,          /*bEndpointAddress: Endpoint Address (IN)*/
 	0x03,          /*bmAttributes: Interrupt endpoint*/
 	EP0_PACKET_SIZE, /*wMaxPacketSize: x Byte max */      //<FIXME-------------这里的长度需要跟实际发送的长度一致
@@ -158,18 +161,44 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	0x0A,          /*bInterval: Polling Interval (32 ms)*/
 	/* 34 */
 
-#if (CONFIG_EP_NUM == 2)
 	/******************** 输出端点描述符 ********************/
 	0x07,          /*bLength: Endpoint Descriptor size*/
 	USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-
 	0x01,          /*bEndpointAddress: Endpoint Address (OUT)*/
 	0x03,          /*bmAttributes: Interrupt endpoint*/
 	0x40,          /*wMaxPacketSize: x Byte max */ //FIXME<-------------这里的长度需要跟实际发送的长度一致
 	0x00,
-	0x01,          /*bInterval: Polling Interval (32 ms)*/
+	0x0A,          /*bInterval: Polling Interval (32 ms)*/
 	/* 41 */
-#endif
+
+    /************** Descriptor of Joystick Mouse interface ****************/
+    0x09, /*bLength: Interface Descriptor size*/
+    USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
+    0x01, /*bInterfaceNumber: Number of Interface*/
+    0x00, /*bAlternateSetting: Alternate setting*/
+    1,    /*bNumEndpoints*/                                 //FIXME<----------------端点数目
+    0x03, /*bInterfaceClass: HID*/
+    0, /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
+    2, /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
+    0, /*iInterface: Index of string descriptor*/
+    /******************** Descriptor of Joystick Mouse HID ********************/
+    0x09, /*bLength: HID Descriptor size*/
+    HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
+    0x10, /*bcdHID: HID Class Spec release number*/
+    0x01,
+    0x21, /*bCountryCode: Hardware target country*/
+    0x01, /*bNumDescriptors: Number of HID class descriptors to follow*/
+    0x22, /*bDescriptorType*/
+    sizeof(MouseReportDescriptor),/*wItemLength: Total length of Report descriptor*/
+    0x00,
+    /******************** Descriptor of Joystick Mouse endpoint ********************/
+    0x07, /*bLength: Endpoint Descriptor size*/
+    USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
+    0x82, /*bEndpointAddress: Endpoint Address (IN)*/
+    0x03, /*bmAttributes: Interrupt endpoint*/
+    EP0_PACKET_SIZE, /*wMaxPacketSize: x Byte max */
+    0x00,
+    0x0A, /*bInterval: Polling Interval (32 ms)*/
 };
 
 const struct descriptor DeviceDesc =

@@ -133,13 +133,21 @@ void usb_hw_ep_config(void)
     _SetEPRxCount(ENDP0, EP0_PACKET_SIZE );
     _SetEPRxStatus(ENDP0, EP_RX_VALID);
 
-    /* Initialize Endpoint 1 */
+    /* Initialize Endpoint 1 for keyboard */
     _SetEPType(ENDP1, EP_INTERRUPT);
     _SetEPRxAddr(ENDP1, ENDP1_RXADDR);
     _SetEPTxAddr(ENDP1, ENDP1_TXADDR);
     _SetEPTxCount(ENDP1, 8);
     _SetEPRxStatus(ENDP1, EP_RX_VALID);
     _SetEPTxStatus(ENDP1, EP_TX_NAK);
+
+    /* Initialize Endpoint 2 for mouse */
+    _SetEPType(ENDP2, EP_INTERRUPT);
+    //_SetEPRxAddr(ENDP2, ENDP2_RXADDR);
+    _SetEPTxAddr(ENDP2, ENDP2_TXADDR);
+    _SetEPTxCount(ENDP2, 4);
+    _SetEPRxStatus(ENDP2, EP_RX_DIS);
+    _SetEPTxStatus(ENDP2, EP_TX_NAK);
 
     _SetEPAddress(0, 0);
     _SetEPAddress(1, 1);

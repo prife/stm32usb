@@ -27,7 +27,7 @@ enum usb_cable_type
 #define USB_DISCONNECT_PIN                  GPIO_Pin_11
 #define RCC_APB2Periph_GPIO_DISCONNECT      RCC_APB2Periph_GPIOF
 
-#define CONFIG_EP_NUM   2
+#define CONFIG_EP_NUM   3
 #define EP0_PACKET_SIZE 64
 
 /* Packet Memroy */
@@ -53,5 +53,9 @@ enum usb_cable_type
 /* tx buffer base address */
 #define ENDP1_RXADDR        (0x0C0)
 #define ENDP1_TXADDR        (0x100)
+
+/* EP2  */
+#define ENDP2_RXADDR        (0x140)
+#define ENDP2_TXADDR        (0x180)
 
 #endif
