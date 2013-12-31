@@ -185,6 +185,7 @@ void usb_hw_ep_config(void)
 
     _SetEPAddress(0, 0);
     _SetEPAddress(1, 1);
+    _SetEPAddress(2, 2);
     /* enable USB endpoint and config EP0 */
     _SetDADDR(DADDR_EF | 0);
 }
