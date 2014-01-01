@@ -204,7 +204,14 @@ void rt_keyboard_thread_entry(void * para)
             continue;
 
         Joystick_Send(key);
-        while(JoyState() != 0);
+        while(JoyState() != 0)
+        {
+            if (key <= KEY_SEPERATE)
+            {
+                Joystick_Send(key);
+                rt_thread_delay(RT_TICK_PER_SECOND / 100);
+            }
+        }
         if(key > KEY_SEPERATE)
             Joystick_Send(BTN_UP);
     }
