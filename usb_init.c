@@ -189,8 +189,8 @@ void ep_send(int ep_nr, const u8 * buf, int len)
     int i;
     u32 * ptr = (u32*)(((u16)*EPREG_TXBUF_ADDR(ep_nr)) * 2 + PMA_ADDR);
 
-    TRACE("send ep<%d>: ptr %p, len %d\n", ep_nr, ptr, len);
-    DUMPHEX((u8*)buf, len);
+    //TRACE("send ep<%d>: ptr %p, len %d\n", ep_nr, ptr, len);
+    //DUMPHEX((u8*)buf, len);
     for (i=0; i<len; i+=2)
     {
         (*ptr++) = ((rt_uint16_t)buf[i+1] << 8) | buf[i];
