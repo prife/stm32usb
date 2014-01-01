@@ -14,13 +14,13 @@ static const u8 DeviceDescriptor[] = {
 	USB_DEVICE_DESCRIPTOR_TYPE, /*bDescriptorType*/
 	0x10,                       /*bcdUSB */
 	0x01,
-	0x00,                       /*bDeviceClass*/
+	0x02,                       /*bDeviceClass: 0x02=CDC*/
 	0x00,                       /*bDeviceSubClass*/
 	0x00,                       /*bDeviceProtocol*/
 	0x40,                       /*bMaxPacketSize40*/
 	0x6E,                       /*idVendor (0x3689)*/   //FIXME<-------------------厂商ID字段
 	0x09,
-	0x03,                       /*idProduct = 0x8762*/  //FIXME<-------------------idProduct
+	0x04,                       /*idProduct = 0x8762*/  //FIXME<-------------------idProduct
 	0x00,
 	0x00,                       /*bcdDevice rel. 2.00*/ //FIXME<-------------------加密狗版本号
 	0x02,
