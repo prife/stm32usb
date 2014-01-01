@@ -1,6 +1,8 @@
 #include "usb.h"
 #include "usb_conf.h"
 
+#define VCOM_PORT_DATA_SIZE 0x40
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
@@ -39,7 +41,7 @@ const struct descriptor ReportDesc[2];
 
 #define CONFIG_DESC_SIZE         (USB_DESC_CONFIG_SIZE        + \
                                   USB_DESC_INTERFACE_SIZE * 2 + \
-                                  USB_DESC_HID_SIZE * 2       + \
+                                  USB_DESC_CDCSUB_SIZE        + \
                        USB_DESC_ENDPOINT_SIZE * CONFIG_EP_NUM)
 
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
@@ -58,10 +60,10 @@ const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
 
 	/************** Descriptor of interface0 <CDC class> ****************/
 	/* 09 */
-    /*Interface Descriptor*/
+    /*Interface Descriptor <9 Bytes>*/
     0x09,   /* bLength: Interface Descriptor size */
     USB_INTERFACE_DESCRIPTOR_TYPE,  /* bDescriptorType: Interface */
-    /* Interface descriptor type */
+    /* Interface descriptor type*/
     0x00,   /* bInterfaceNumber: Number of Interface */
     0x00,   /* bAlternateSetting: Alternate setting */
     0x01,   /* bNumEndpoints: One endpoints used */
@@ -69,24 +71,24 @@ const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
     0x02,   /* bInterfaceSubClass: Abstract Control Model */
     0x01,   /* bInterfaceProtocol: Common AT commands */
     0x00,   /* iInterface: */
-    /*Header Functional Descriptor*/
+    /*Header Functional Descriptor <5 Bytes>*/
     0x05,   /* bLength: Endpoint Descriptor size */
     0x24,   /* bDescriptorType: CS_INTERFACE */
     0x00,   /* bDescriptorSubtype: Header Func Desc */
     0x10,   /* bcdCDC: spec release number */
     0x01,
-    /*Call Management Functional Descriptor*/
+    /*Call Management Functional Descriptor <5 Bytes>*/
     0x05,   /* bFunctionLength */
     0x24,   /* bDescriptorType: CS_INTERFACE */
     0x01,   /* bDescriptorSubtype: Call Management Func Desc */
     0x00,   /* bmCapabilities: D0+D1 */
     0x00,   /* bDataInterface: 0 */
-    /*ACM Functional Descriptor*/
+    /*ACM Functional Descriptor <4 Bytes>*/
     0x04,   /* bFunctionLength */
     0x24,   /* bDescriptorType: CS_INTERFACE */
     0x02,   /* bDescriptorSubtype: Abstract Control Management desc */
     0x02,   /* bmCapabilities */
-    /*Union Functional Descriptor*/
+    /*Union Functional Descriptor <5 Bytes>*/
     0x05,   /* bFunctionLength */
     0x24,   /* bDescriptorType: CS_INTERFACE */
     0x06,   /* bDescriptorSubtype: Union func desc */
@@ -101,6 +103,35 @@ const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
     EP0_PACKET_SIZE, /*wMaxPacketSize: x Byte max */
     0x00,
     0x0A,          /*bInterval: Polling Interval (32 ms)*/
+
+    /*Data class interface descriptor*/
+    0x09,   /* bLength: Endpoint Descriptor size */
+    USB_INTERFACE_DESCRIPTOR_TYPE,  /* bDescriptorType: */
+    0x01,   /* bInterfaceNumber: Number of Interface */
+    0x00,   /* bAlternateSetting: Alternate setting */
+    0x02,   /* bNumEndpoints: Two bulk endpoints used */
+    0x0A,   /* bInterfaceClass: CDC */
+    0x00,   /* bInterfaceSubClass: */
+    0x00,   /* bInterfaceProtocol: */
+    0x00,   /* iInterface: */
+
+    /*Input Endpoint 2 Descriptor*/
+    0x07,   /* bLength: Endpoint Descriptor size */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,   /* bDescriptorType: Endpoint */
+    0x82,   /* bEndpointAddress: (IN1) */
+    0x02,   /* bmAttributes: Bulk */
+    VCOM_PORT_DATA_SIZE,             /* wMaxPacketSize: */
+    0x00,
+    0x00,   /* bInterval */
+
+    /*Output Endpoint 2 Descriptor*/
+    0x07,   /* bLength: Endpoint Descriptor size */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,   /* bDescriptorType: Endpoint */
+    0x02,   /* bEndpointAddress: (OUT2) */
+    0x02,   /* bmAttributes: Bulk */
+    VCOM_PORT_DATA_SIZE,             /* wMaxPacketSize: */
+    0x00,
+    0x00,   /* bInterval: ignore for Bulk transfer */
 };
 
 const struct descriptor DeviceDesc =

@@ -20,6 +20,7 @@ struct descriptor
 #define USB_DESC_INTERFACE_SIZE    9
 #define USB_DESC_HID_SIZE          9
 #define USB_DESC_ENDPOINT_SIZE     7
+#define USB_DESC_CDCSUB_SIZE     (5+5+4+5)
 
 typedef enum _HID_REQUESTS {
     GET_REPORT = 1,
