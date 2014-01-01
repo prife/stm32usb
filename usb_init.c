@@ -79,6 +79,7 @@ struct usb_send_data
 };
 struct usb_send_data send_status;
 
+static int cdc_vcom_set_line_conding_flag;
 //for set address
 static int set_address_flag;
 static int gAddress;
@@ -383,6 +384,25 @@ int handle_packet_setup(struct ep_buf *ep)
             case SET_PROTOCOL:
                 TRACE("SET_PROTOCOL\n");
                 break;
+            //for CDC class
+            case CDC_GET_LINE_CODING:
+                TRACE("CDC_GET_LINE_CODING [%d]\n", wLength);
+                {
+#define UART_BSP  115200
+                    static char vcom_line_coding[7] = {
+                        // dwDTERate 4Bytes
+                        UART_BSP & 0xFF,
+                        UART_BSP >> 8,
+                        UART_BSP >> 16,
+                        UART_BSP >> 24,
+                        0, // bCharFormat
+                        0, // bParityType
+                        8, // bDataBits
+                    };
+                    RT_ASSERT(wLength < EP0_PACKET_SIZE);
+                    ep_send(0, vcom_line_coding, wLength);
+                }
+                break;
             default:
                 TRACE("bad request!\n");
                 break;
@@ -474,6 +494,15 @@ int handle_packet_setup(struct ep_buf *ep)
                 break;
             case SET_PROTOCOL:
                 TRACE("SET_PROTOCOL\n");
+                break;
+            //for CDC class
+            case CDC_SET_LINE_CODING:
+                TRACE("CDC_SET_LINE_CODING\n");
+                cdc_vcom_set_line_conding_flag = 1;
+                break;
+            case CDC_SET_CONTROL_LINE_STATE:
+                TRACE("CDC_SET_CONTROL_LINE_STATE\n");
+                ep_send(0, NULL, 0);
                 break;
             default:
                 TRACE("bad request!\n");
@@ -589,7 +618,12 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
             else
             { //OUT
                 //how to handle this?!
-                TRACE("[%4d] USB¶Ëµã<%d> out packet, reg:<0x%x>, len:<%d>\n", __LINE__, ep_id, ep_value, ep.len);
+                //TRACE("[%4d] USB¶Ëµã<%d> out packet, reg:<0x%x>, len:<%d>\n", __LINE__, ep_id, ep_value, ep.len);
+                if (cdc_vcom_set_line_conding_flag)
+                {
+                    cdc_vcom_set_line_conding_flag = 0;
+                    ep_send(0, NULL, 0);
+                }
                 //handle_packet_out(&ep);
             }
         }

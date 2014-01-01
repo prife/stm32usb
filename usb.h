@@ -32,6 +32,12 @@ typedef enum _HID_REQUESTS {
     SET_PROTOCOL   //0x0B
 } HID_REQUESTS;
 
+typedef enum _CDC_REQUESTS {
+    CDC_SET_LINE_CODING = 0x20,
+    CDC_GET_LINE_CODING = 0x21,
+    CDC_SET_CONTROL_LINE_STATE = 0x22,
+} CDC_REQUESTS;
+
 extern const struct descriptor DeviceDesc;
 extern const struct descriptor ConfigDesc;
 extern const struct descriptor StringDescTable[];
