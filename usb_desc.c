@@ -58,17 +58,40 @@ const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
 
 	/************** Descriptor of interface0 <CDC class> ****************/
 	/* 09 */
-	0x09,         /*bLength: Interface Descriptor size*/
-	USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
-	0x00,         /*bInterfaceNumber: Number of Interface*/
-	0x00,         /*bAlternateSetting: Alternate setting*/
-	1,            /*bNumEndpoints*/				    //FIXME<----------------端点数目
-	0x02,         /*bInterfaceClass: 0x03=HID, 0x02=CDC*/
-	2,         /*bInterfaceSubClass  */
-               /*         HID class : 1=BOOT, 0=no boot, Other Reserved */
-               /*         CDC class : 0x02=Abstract Control Model */
-	1,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
-	0,            /*iInterface: Index of string descriptor*/
+    /*Interface Descriptor*/
+    0x09,   /* bLength: Interface Descriptor size */
+    USB_INTERFACE_DESCRIPTOR_TYPE,  /* bDescriptorType: Interface */
+    /* Interface descriptor type */
+    0x00,   /* bInterfaceNumber: Number of Interface */
+    0x00,   /* bAlternateSetting: Alternate setting */
+    0x01,   /* bNumEndpoints: One endpoints used */
+    0x02,   /* bInterfaceClass: Communication Interface Class */
+    0x02,   /* bInterfaceSubClass: Abstract Control Model */
+    0x01,   /* bInterfaceProtocol: Common AT commands */
+    0x00,   /* iInterface: */
+    /*Header Functional Descriptor*/
+    0x05,   /* bLength: Endpoint Descriptor size */
+    0x24,   /* bDescriptorType: CS_INTERFACE */
+    0x00,   /* bDescriptorSubtype: Header Func Desc */
+    0x10,   /* bcdCDC: spec release number */
+    0x01,
+    /*Call Management Functional Descriptor*/
+    0x05,   /* bFunctionLength */
+    0x24,   /* bDescriptorType: CS_INTERFACE */
+    0x01,   /* bDescriptorSubtype: Call Management Func Desc */
+    0x00,   /* bmCapabilities: D0+D1 */
+    0x00,   /* bDataInterface: 0 */
+    /*ACM Functional Descriptor*/
+    0x04,   /* bFunctionLength */
+    0x24,   /* bDescriptorType: CS_INTERFACE */
+    0x02,   /* bDescriptorSubtype: Abstract Control Management desc */
+    0x02,   /* bmCapabilities */
+    /*Union Functional Descriptor*/
+    0x05,   /* bFunctionLength */
+    0x24,   /* bDescriptorType: CS_INTERFACE */
+    0x06,   /* bDescriptorSubtype: Union func desc */
+    0x00,   /* bMasterInterface: Communication class interface */
+    0x01,   /* bSlaveInterface0: Data Class Interface */
 };
 
 const struct descriptor DeviceDesc =
