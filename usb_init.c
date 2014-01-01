@@ -286,19 +286,12 @@ int handle_packet_setup(struct ep_buf *ep)
                     //send_len = MIN(wLength, ConfigDesc.len);
                     //RT_ASSERT(send_len <= 64); //FIXME
                     //ep_send(0, ConfigDesc.desc, send_len);
-                    if (wLength < ConfigDesc.len)
-                    {
-                        ep_send(0, ConfigDesc.desc, wLength);
-                    }
-                    else
-                    {
-                        send_status.ep = 0;
-                        send_status.total = ConfigDesc.len;
-                        send_len = MIN(ConfigDesc.len, EP0_PACKET_SIZE);
-                        ep_send(0, ConfigDesc.desc, send_len);
-                        send_status.sent = send_len;
-                        send_status.buf =ConfigDesc.desc;
-                    }
+                    send_status.ep = 0;
+                    send_status.total = MIN(ConfigDesc.len, wLength);
+                    send_len = MIN(send_status.total, EP0_PACKET_SIZE);
+                    ep_send(0, ConfigDesc.desc, send_len);
+                    send_status.sent = send_len;
+                    send_status.buf =ConfigDesc.desc;
                     break;
                 case DESC_STRING:
                     TRACE("string_desc:%d-->",(wValue & 0xFF));
