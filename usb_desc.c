@@ -9,7 +9,7 @@ typedef short s16;
 typedef int s32;
 
 /* USB Standard Device Descriptor */
-const u8 Joystick_DeviceDescriptor[] = {
+static const u8 DeviceDescriptor[] = {
 	0x12,                       /*bLength */
 	USB_DEVICE_DESCRIPTOR_TYPE, /*bDescriptorType*/
 	0x10,                       /*bcdUSB */
@@ -31,7 +31,7 @@ const u8 Joystick_DeviceDescriptor[] = {
 	3,                          /*Index of string descriptor describing the
                                              device serial number */
 	0x01                        /*bNumConfigurations*/
-}; /* Joystick_DeviceDescriptor */
+}; /* DeviceDescriptor */
 
 /* USB Report Descriptor */
 static const u8 MouseReportDescriptor[] = {
@@ -111,16 +111,16 @@ const struct descriptor ReportDesc[2] =
 
 /* USB Configuration Descriptor */
 
-#define JOYSTICK_SIZ_CONFIG_DESC (USB_DESC_CONFIG_SIZE        + \
+#define CONFIG_DESC_SIZE         (USB_DESC_CONFIG_SIZE        + \
                                   USB_DESC_INTERFACE_SIZE * 2 + \
                                   USB_DESC_HID_SIZE * 2       + \
                        USB_DESC_ENDPOINT_SIZE * CONFIG_EP_NUM)
 
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
-const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
+const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
 	0x09, /* bLength: Configuation Descriptor size */
 	USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
-	JOYSTICK_SIZ_CONFIG_DESC,
+	CONFIG_DESC_SIZE,
 	/* wTotalLength: Bytes returned */
 	0x00,
 	0x02,         /*bNumInterfaces: 1 interface*/
@@ -130,7 +130,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	0x80,         /*bmAttributes: self powered */
 	0x32,         /*MaxPower 100 mA: this current is used for detecting Vbus*/
 
-	/************** Descriptor of Joystick keyboard interface ****************/
+	/************** Descriptor of  keyboard interface ****************/
 	/* 09 */
 	0x09,         /*bLength: Interface Descriptor size*/
 	USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
@@ -141,7 +141,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	1,         /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
 	1,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
 	0,            /*iInterface: Index of string descriptor*/
-	/******************** Descriptor of Joystick keyboard HID ********************/
+	/******************** Descriptor of  keyboard HID ********************/
 	/* 18 */
 	0x09,         /*bLength: HID Descriptor size*/
 	HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
@@ -152,7 +152,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	0x22,         /*bDescriptorType*/
 	sizeof(KeyboardReportDescriptor),/*wItemLength: Total length of Report descriptor*/
 	0x00,
-	/******************** Descriptor of Joystick keyboard endpoint ********************/
+	/******************** Descriptor of  keyboard endpoint ********************/
 	/* 27 */
 	0x07,          /*bLength: Endpoint Descriptor size*/
 	USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
@@ -173,7 +173,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 	0x0A,          /*bInterval: Polling Interval (32 ms)*/
 	/* 41 */
 
-    /************** Descriptor of Joystick Mouse interface ****************/
+    /************** Descriptor of  Mouse interface ****************/
     0x09, /*bLength: Interface Descriptor size*/
     USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
     0x01, /*bInterfaceNumber: Number of Interface*/
@@ -183,7 +183,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
     0, /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
     2, /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
     0, /*iInterface: Index of string descriptor*/
-    /******************** Descriptor of Joystick Mouse HID ********************/
+    /******************** Descriptor of  Mouse HID ********************/
     0x09, /*bLength: HID Descriptor size*/
     HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
     0x10, /*bcdHID: HID Class Spec release number*/
@@ -193,7 +193,7 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
     0x22, /*bDescriptorType*/
     sizeof(MouseReportDescriptor),/*wItemLength: Total length of Report descriptor*/
     0x00,
-    /******************** Descriptor of Joystick Mouse endpoint ********************/
+    /******************** Descriptor of  Mouse endpoint ********************/
     0x07, /*bLength: Endpoint Descriptor size*/
     USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
     0x82, /*bEndpointAddress: Endpoint Address (IN)*/
@@ -204,31 +204,31 @@ const u8 Joystick_ConfigDescriptor[JOYSTICK_SIZ_CONFIG_DESC] = {
 };
 
 const struct descriptor DeviceDesc =
-{ Joystick_DeviceDescriptor, sizeof(Joystick_DeviceDescriptor), };
+{ DeviceDescriptor, sizeof(DeviceDescriptor), };
 const struct descriptor ConfigDesc =
-{ Joystick_ConfigDescriptor, sizeof(Joystick_ConfigDescriptor), };
+{ ConfigDescriptor, sizeof(ConfigDescriptor), };
 
-const u8 Joystick_StringLangID[4] = {
+static const u8 StringLangID[4] = {
 	04,/* Size of Language ID */
 	USB_STRING_DESCRIPTOR_TYPE,
 	0x09,//0x0409 Aemriacan Engligsh
 	0x04
 };
 
-const u8 Joystick_StringVendor[] = {
-	0,//Joystick_StringVendorSize, /* Size of Vendor string */
+static const u8 StringVendor[] = {
+	0,//_StringVendorSize, /* Size of Vendor string */
 	USB_STRING_DESCRIPTOR_TYPE,  /* bDescriptorType*/
 	/* Manufacturer: "STMicroelectronics" */
 	'U', 0, 'S', 0, 'B', 0, 'k', 0, 'e', 0, 'y', 0
 };	//14 bytes
 
-const u8 Joystick_StringProduct[] = {
-	0,//Joystick_StringProductSize,          /* bLength */
+static const u8 StringProduct[] = {
+	0,//StringProductSize,          /* bLength */
 	USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
 	'U', 0, 'S', 0, 'B', 0, 'k', 0, 'e', 0, 'y', 0
 };
-const u8 Joystick_StringSerial[] = {
-	0,//Joystick_StringSerialSize,           /* bLength */
+static const u8 StringSerial[] = {
+	0,//StringSerialSize,           /* bLength */
 	USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
     'J', 0, 'o', 0, 'y', 0, 'S', 0, 't', 0, 'i', 0, 'c', 0,
     'k', 0, 'M', 0, 'o', 0, 'u', 0, 's', 0, 'e'
@@ -237,10 +237,10 @@ const u8 Joystick_StringSerial[] = {
 //u8 str_desc_buffer[256];
 const struct descriptor StringDescTable[] =
 {
-    {Joystick_StringLangID, sizeof(Joystick_StringLangID), },
-    {Joystick_StringVendor, sizeof(Joystick_StringVendor), },
-    {Joystick_StringProduct, sizeof(Joystick_StringProduct), },
-    {Joystick_StringSerial, sizeof(Joystick_StringSerial), },
+    {StringLangID, sizeof(StringLangID), },
+    {StringVendor, sizeof(StringVendor), },
+    {StringProduct, sizeof(StringProduct), },
+    {StringSerial, sizeof(StringSerial), },
 };
 
 const unsigned char * str_desc_name_table[]=
