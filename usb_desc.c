@@ -33,81 +33,7 @@ static const u8 DeviceDescriptor[] = {
 	0x01                        /*bNumConfigurations*/
 }; /* DeviceDescriptor */
 
-/* USB Report Descriptor */
-static const u8 MouseReportDescriptor[] = {
-    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
-    0x09, 0x02,                    // USAGE (Mouse)
-    0xa1, 0x01,                    // COLLECTION (Application)
-    0x85, 0x01,                    //   REPORT_ID(1)
-    0x09, 0x01,                    //   USAGE (Pointer)
-    0xa1, 0x00,                    //   COLLECTION (Physical)
-    0x05, 0x09,                    //     USAGE_PAGE (Button)
-    0x19, 0x01,                    //     USAGE_MINIMUM (Button 1)
-    0x29, 0x03,                    //     USAGE_MAXIMUM (Button 3)
-    0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
-    0x25, 0x01,                    //     LOGICAL_MAXIMUM (1)
-    0x75, 0x01,                    //     REPORT_SIZE (1)
-    0x95, 0x03,                    //     REPORT_COUNT (3)
-    0x81, 0x02,                    //     INPUT (Data,Var,Abs)
-    0x75, 0x05,                    //     REPORT_SIZE (5)
-    0x95, 0x01,                    //     REPORT_COUNT (1)
-    0x81, 0x03,                    //     INPUT (Cnst,Var,Abs)
-    0x05, 0x01,                    //     USAGE_PAGE (Generic Desktop)
-    0x09, 0x30,                    //     USAGE (X)
-    0x09, 0x31,                    //     USAGE (Y)
-    0x09, 0x38,                    //     USAGE (Wheel)
-    0x15, 0x81,                    //     LOGICAL_MINIMUM (-127)
-    0x25, 0x7f,                    //     LOGICAL_MAXIMUM (127)
-    0x75, 0x08,                    //     REPORT_SIZE (8)
-    0x95, 0x03,                    //     REPORT_COUNT (3)
-    0x81, 0x06,                    //     INPUT (Data,Var,Rel)
-    0xc0,                          //   END_COLLECTION
-    0xc0                           // END_COLLECTION
-};
-
-static const u8 KeyboardReportDescriptor[] =
-{
-    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
-    0x09, 0x06,                    // USAGE (Keyboard)
-    0xa1, 0x01,                    // COLLECTION (Application)
-    0x85, 0x01,                    //   REPORT_ID(1)
-    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)
-    0x19, 0xe0,                    //   USAGE_MINIMUM (Keyboard LeftControl)
-    0x29, 0xe7,                    //   USAGE_MAXIMUM (Keyboard Right GUI)
-    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-    0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
-    0x75, 0x01,                    //   REPORT_SIZE (1)
-    0x95, 0x08,                    //   REPORT_COUNT (8)
-    0x81, 0x02,                    //   INPUT (Data,Var,Abs)
-    0x95, 0x01,                    //   REPORT_COUNT (1)
-    0x75, 0x08,                    //   REPORT_SIZE (8)
-    0x81, 0x03,                    //   INPUT (Cnst,Var,Abs)
-    0x95, 0x05,                    //   REPORT_COUNT (5)
-    0x75, 0x01,                    //   REPORT_SIZE (1)
-    0x05, 0x08,                    //   USAGE_PAGE (LEDs)
-    0x19, 0x01,                    //   USAGE_MINIMUM (Num Lock)
-    0x29, 0x05,                    //   USAGE_MAXIMUM (Kana)
-    0x91, 0x02,                    //   OUTPUT (Data,Var,Abs)
-    0x95, 0x01,                    //   REPORT_COUNT (1)
-    0x75, 0x03,                    //   REPORT_SIZE (3)
-    0x91, 0x03,                    //   OUTPUT (Cnst,Var,Abs)
-    0x95, 0x06,                    //   REPORT_COUNT (6)
-    0x75, 0x08,                    //   REPORT_SIZE (8)
-    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-    0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
-    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)
-    0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
-    0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
-    0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
-    0xc0                           // END_COLLECTION
-}; /*  KeyboardReportDescriptor */
-
-const struct descriptor ReportDesc[2] =
-{ 
-    KeyboardReportDescriptor, sizeof(KeyboardReportDescriptor),
-    MouseReportDescriptor, sizeof(MouseReportDescriptor),
-};
-
+const struct descriptor ReportDesc[2];
 
 /* USB Configuration Descriptor */
 
@@ -130,77 +56,19 @@ const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
 	0x80,         /*bmAttributes: self powered */
 	0x32,         /*MaxPower 100 mA: this current is used for detecting Vbus*/
 
-	/************** Descriptor of  keyboard interface ****************/
+	/************** Descriptor of interface0 <CDC class> ****************/
 	/* 09 */
 	0x09,         /*bLength: Interface Descriptor size*/
 	USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
 	0x00,         /*bInterfaceNumber: Number of Interface*/
 	0x00,         /*bAlternateSetting: Alternate setting*/
-	2,            /*bNumEndpoints*/				    //FIXME<----------------端点数目
-	0x03,         /*bInterfaceClass: HID*/
-	1,         /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
+	1,            /*bNumEndpoints*/				    //FIXME<----------------端点数目
+	0x02,         /*bInterfaceClass: 0x03=HID, 0x02=CDC*/
+	2,         /*bInterfaceSubClass  */
+               /*         HID class : 1=BOOT, 0=no boot, Other Reserved */
+               /*         CDC class : 0x02=Abstract Control Model */
 	1,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
 	0,            /*iInterface: Index of string descriptor*/
-	/******************** Descriptor of  keyboard HID ********************/
-	/* 18 */
-	0x09,         /*bLength: HID Descriptor size*/
-	HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
-	0x10,         /*bcdHID: HID Class Spec release number*/
-	0x01,
-	0x21,         /*bCountryCode: Hardware target country*/
-	0x01,         /*bNumDescriptors: Number of HID class descriptors to follow*/
-	0x22,         /*bDescriptorType*/
-	sizeof(KeyboardReportDescriptor),/*wItemLength: Total length of Report descriptor*/
-	0x00,
-	/******************** Descriptor of  keyboard endpoint ********************/
-	/* 27 */
-	0x07,          /*bLength: Endpoint Descriptor size*/
-	USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-	0x81,          /*bEndpointAddress: Endpoint Address (IN)*/
-	0x03,          /*bmAttributes: Interrupt endpoint*/
-	EP0_PACKET_SIZE, /*wMaxPacketSize: x Byte max */      //<FIXME-------------这里的长度需要跟实际发送的长度一致
-	0x00,
-	0x0A,          /*bInterval: Polling Interval (32 ms)*/
-	/* 34 */
-
-	/******************** 输出端点描述符 ********************/
-	0x07,          /*bLength: Endpoint Descriptor size*/
-	USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-	0x01,          /*bEndpointAddress: Endpoint Address (OUT)*/
-	0x03,          /*bmAttributes: Interrupt endpoint*/
-	0x40,          /*wMaxPacketSize: x Byte max */ //FIXME<-------------这里的长度需要跟实际发送的长度一致
-	0x00,
-	0x0A,          /*bInterval: Polling Interval (32 ms)*/
-	/* 41 */
-
-    /************** Descriptor of  Mouse interface ****************/
-    0x09, /*bLength: Interface Descriptor size*/
-    USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
-    0x01, /*bInterfaceNumber: Number of Interface*/
-    0x00, /*bAlternateSetting: Alternate setting*/
-    1,    /*bNumEndpoints*/                                 //FIXME<----------------端点数目
-    0x03, /*bInterfaceClass: HID*/
-    0, /*bInterfaceSubClass : 1=BOOT, 0=no boot 其他数值保留*/
-    2, /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse 其他数值保留*/
-    0, /*iInterface: Index of string descriptor*/
-    /******************** Descriptor of  Mouse HID ********************/
-    0x09, /*bLength: HID Descriptor size*/
-    HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
-    0x10, /*bcdHID: HID Class Spec release number*/
-    0x01,
-    0x21, /*bCountryCode: Hardware target country*/
-    0x01, /*bNumDescriptors: Number of HID class descriptors to follow*/
-    0x22, /*bDescriptorType*/
-    sizeof(MouseReportDescriptor),/*wItemLength: Total length of Report descriptor*/
-    0x00,
-    /******************** Descriptor of  Mouse endpoint ********************/
-    0x07, /*bLength: Endpoint Descriptor size*/
-    USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-    0x82, /*bEndpointAddress: Endpoint Address (IN)*/
-    0x03, /*bmAttributes: Interrupt endpoint*/
-    EP0_PACKET_SIZE, /*wMaxPacketSize: x Byte max */
-    0x00,
-    0x0A, /*bInterval: Polling Interval (32 ms)*/
 };
 
 const struct descriptor DeviceDesc =
