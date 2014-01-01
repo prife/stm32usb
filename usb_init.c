@@ -684,7 +684,7 @@ void dumphex(u8 * buf, u16 count)
         if ((i+1)%16 == 0)
             rt_kprintf("\n");
     }
-    if ((i+1)%16 != 0)
+    if ((i != 0) && (i+1)%16 != 0)
         rt_kprintf("\n");
 }
 
