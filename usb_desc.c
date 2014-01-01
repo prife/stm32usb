@@ -92,6 +92,15 @@ const u8 ConfigDescriptor[CONFIG_DESC_SIZE] = {
     0x06,   /* bDescriptorSubtype: Union func desc */
     0x00,   /* bMasterInterface: Communication class interface */
     0x01,   /* bSlaveInterface0: Data Class Interface */
+
+    /******************** Input endpoint descriptor ********************/
+    0x07,          /*bLength: Endpoint Descriptor size*/
+    USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
+    0x81,          /*bEndpointAddress: Endpoint Address (IN)*/
+    0x03,          /*bmAttributes: Interrupt endpoint*/
+    EP0_PACKET_SIZE, /*wMaxPacketSize: x Byte max */
+    0x00,
+    0x0A,          /*bInterval: Polling Interval (32 ms)*/
 };
 
 const struct descriptor DeviceDesc =
